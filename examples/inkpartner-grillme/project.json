@@ -1,0 +1,129 @@
+{
+  "title": "inkpartner — Grillme-Skizze gegen den Code",
+  "description": "inkpartner: interaktiver Abgleich der Grillme-Skizze mit dem Code.",
+  "brand": "inkpartner",
+  "brand_sub": "Code-Abgleich",
+  "eyebrow": "inkpartner · Grillme-Abgleich · 2026-10-25",
+  "headline": "Die Grillme-Skizze, gegen den Code gehalten",
+  "lede_html": "Samuels handgezeichnete Pipeline (Notiz <strong>/Inkpartnertest S. 3</strong>) als Diagramm, Knoten für Knoten mit dem Stand auf <strong>watch/write-gap</strong> verglichen: was jeder Schritt tut, ob die Skizze noch stimmt, welche Session oder welcher Commit ihn geändert hat, welche Regel greift und was offen ist.",
+  "subtitle_html": "Notiz /Inkpartnertest S. 3, 25.10.2026 00:30 Berlin · Code-Stand <span id=\"code-stand\">watch/write-gap @ 0bfccb4</span>",
+  "note_ref": "/Inkpartnertest S. 3",
+  "footer": "Quelle: flow.json · GRILLME_notizen.md · Stand 25.10.2026",
+  "point_label": "Grillme-Punkt",
+  "points_label": "Grillme-Punkte",
+  "code_ref": "watch/write-gap",
+  "callout_offen_id": "drift",
+  "theme_key": "inkpartner-theme",
+  "image": "grillme.png",
+  "example_node": "validate",
+  "points": [
+    [
+      "1",
+      "Bild → VLM → Agent",
+      "stimmt noch",
+      "`agent.read` rendert nur die Schülertinte als ein Bild → VLM"
+    ],
+    [
+      "2",
+      "Agent klassifiziert Fach + Elemente (Text/Bild/Frage)",
+      "stimmt im Kern, Details anders",
+      "`read()` gibt `(subject, elements)` zurück. Elementarten: line, formula, code, text, node, edge, arrow, box, table, drawing, printed – kein „Bild“/„Frage“; Hilfe-Fragen erkennt `asks_for_help`. „Erst erkennen, dann Prompt“ (9ba24a5) ist nur lokal, nicht auf GitHub"
+    ],
+    [
+      "3",
+      "Fach-„Klasse“ mit Hilfsmitteln = Profil",
+      "stimmt noch",
+      "`profiles.py`: math, code, diagram, pm, prose mit Judge-Prompt, Zeichen, max_actions"
+    ],
+    [
+      "4",
+      "Def: Judge-Prompt + erlaubte Zeichen",
+      "stimmt noch",
+      "`Profile.judge` + `Profile.marks`"
+    ],
+    [
+      "5",
+      "Fach Mathe / Art Rechnung → VLM mit Promptvorlage",
+      "stimmt teilweise",
+      "Mathe-Profil (sympy als Prüfer) ja; eine eigene „Art“ (Rechnung) gibt es nicht"
+    ],
+    [
+      "6",
+      "Output: Vorschlag → Urteil = Boolean, Zeichen = Korrekturmarke",
+      "geändert / anders",
+      "Urteil ist 5-wertig: correct, wrong, hint, help, unreadable; die Farbe folgt dem Urteil (`marks.COLOR`)"
+    ],
+    [
+      "7",
+      "Mathe: 6 Zeichen (Haken, unterstreichen, Kreis, Welle = unlesbar, ?, Text)",
+      "stimmt noch",
+      "`ALL_MARKS` = check, underline, circle, wavy, question, note (main und write-gap gleich)"
+    ],
+    [
+      "8",
+      "Pro Runde max. 4 Zeichen",
+      "stimmt für Mathe",
+      "`max_actions=4` (Default, gilt für Mathe); pm/prose 3; zusätzlich höchstens 1 Hilfe-Notiz pro Runde"
+    ],
+    [
+      "9",
+      "Watcher 1,5 s → review",
+      "stimmt noch (Takt)",
+      "`--interval` Default 1.5 s. Neu seit 0bfccb4: 10 s R-COOLDOWN nach jedem Schreiben, Modell-Timeout 45 s im Watcher (vorher 600 s)"
+    ],
+    [
+      "10",
+      "return → judge.py → plan.py",
+      "anders benannt",
+      "Es gibt kein judge.py: Judge ist `agent.judge` (agent.py), Ablauf in `review.run`"
+    ],
+    [
+      "11",
+      "validate.py = harter Check, „zu streng“",
+      "Datei anders, Inhalt stimmt",
+      "Kein validate.py; `plan.validate()` in plan.py. „Zu streng“: R-VIEWPORT 0.00 und R-RATE blockierten laut Sessions; R-PEN-NEAR in 0bfccb4 per `if False` abgeschaltet"
+    ],
+    [
+      "12",
+      "Eingaben: Judge-Vorschläge + Element-Liste + Fach-Profil",
+      "stimmt noch",
+      "`validate(actions, elements, profile, …)`"
+    ],
+    [
+      "13",
+      "Raute yes → gesammelt + nach Prio sortiert → draw; no → Verworfen-Liste",
+      "stimmt noch",
+      "`out.accepted.sort` (help < wrong < unreadable < hint < correct), `out.rejected` mit Grund"
+    ],
+    [
+      "14",
+      "draw: Zeichen → Pixel an Element-Position, Schüler- vs. Agententinte, Strich-Dictionary",
+      "stimmt, seit 0bfccb4 eigenes Modul",
+      "`draw.py` (neu in 0bfccb4) gibt `list[dict]` Striche mit Action-Key zurück; auf main noch in plan.py"
+    ],
+    [
+      "15",
+      "Delivery → virtueller Stift → RM, SSH Tablet.send",
+      "stimmt, Weg geändert",
+      "Per SSH an /dev/input. main: `cat`; write-gap und planck: `dd bs=24 iflag=fullblock` (37dd2e8, 0bfccb4)"
+    ],
+    [
+      "16",
+      "Nach Schreiben: Notiz-App / Native Device Editor",
+      "unklar",
+      "Bezug nicht eindeutig. Der Dateiweg mit Neustart von xochitl existiert noch als Rückfall (`systemctl stop xochitl …`)"
+    ],
+    [
+      "17",
+      "return None; cat (ließ .rm)",
+      "stimmt noch",
+      "`.rm` wird per `ssh cat` gelesen; diverse `return None` in watch.py"
+    ],
+    [
+      "18",
+      "Wenn Schreiben fehlschlägt: Watcher → Element „implodiert“ [?]",
+      "unklar / anders",
+      "Code: pending + retry_pending, nach 2 Fehlschlägen Stift-Pause; Eskalation nach Codex-Sitzung 23.10. (watch.py ~595)"
+    ]
+  ]
+}

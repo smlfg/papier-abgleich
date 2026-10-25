@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interaktiver Abgleich einer handgezeichneten Skizze mit dem Code.">
+  <title>todo-cli — Demo-Abgleich</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#">todo-cli <span>Code-Abgleich</span></a>
+    <div class="top-actions">
+      <button class="button" id="open-original" type="button" aria-haspopup="dialog">Original-Notiz</button>
+      <button class="icon-button" id="theme-toggle" type="button" aria-label="Dunkelmodus umschalten" aria-pressed="false"><span aria-hidden="true">◐</span></button>
+    </div>
+  </header>
+
+  <div class="page-grid">
+    <main class="main-column" id="main-content">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Demo · fiktives Beispiel</p>
+        <h1 id="page-title">Die Skizze, gegen den Code gehalten</h1>
+        <p class="lede">Fiktives Mini-Beispiel für <strong>papier-abgleich</strong>: sechs Skizzen-Punkte, alle vier Beleg-Marker.</p>
+        <p class="subtitle">Demo-Daten, keine echten Commits.</p>
+      </section>
+
+      <section class="metrics" aria-label="Kennzahlen">
+        <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
+        <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
+        <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
+        <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
+        <article class="metric metric-wide">
+          <span>Status-Verteilung</span>
+          <div id="status-bar" class="status-bar" role="img" aria-label="Status-Verteilung der 24 Knoten"></div>
+          <div id="status-legend" class="status-legend"></div>
+        </article>
+      </section>
+
+      <section class="verdict-sec" aria-labelledby="verdict-title">
+        <div class="sec-head"><h2 id="verdict-title">Das Urteil</h2><span class="sec-n">01</span></div>
+        <div class="verdict-grid">
+          <article class="verdict-card" id="verdict-ok"></article>
+          <article class="verdict-card" id="verdict-diff"></article>
+        </div>
+        <div class="callout" id="callout"></div>
+      </section>
+
+      <div class="sec-head flow-head"><h2>Die Pipeline nach Skizze</h2><span class="sec-n">02</span></div>
+      <p class="sec-sub">Drei Stufen in der Reihenfolge der Notiz. Knoten anklicken (oder ←/→, 1/2/3 für Tabs, Esc schließt, / sucht). Links lassen sich teilen: <code>#parse/code</code>.</p>
+      <section class="explorer" aria-label="Diagramm und Werkzeuge">
+        <div class="toolbar" role="toolbar" aria-label="Diagramm-Werkzeuge">
+          <div class="filter-group" id="status-filters" aria-label="Nach Status filtern"></div>
+          <label class="search-box" for="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Knoten, Text oder Code suchen …" autocomplete="off"></label>
+        </div>
+        <nav class="stage-nav" id="stage-nav" aria-label="Stufen-Navigation"></nav>
+        <div class="flow-frame">
+          <div class="flow-scroll" id="flow-scroll">
+            <div class="flow-grid" id="flow-grid">
+              <svg id="arrows" aria-hidden="true"></svg>
+            </div>
+          </div>
+          <aside class="panel" id="panel" aria-label="Knotendetails" aria-hidden="true">
+            <header class="panel-header">
+              <div class="panel-title-wrap">
+                <p class="panel-eyebrow" id="panel-eyebrow"></p>
+                <h2 id="panel-title"></h2>
+                <div class="panel-meta" id="panel-meta"></div>
+              </div>
+              <div class="panel-nav">
+                <button class="icon-button" id="prev-node" type="button" aria-label="Vorheriger Knoten">←</button>
+                <button class="icon-button" id="next-node" type="button" aria-label="Nächster Knoten">→</button>
+                <button class="icon-button" id="close-panel" type="button" aria-label="Panel schließen">×</button>
+              </div>
+            </header>
+            <div class="tabs" role="tablist" aria-label="Knotendetails">
+              <button id="tab-fakt" type="button" role="tab" aria-controls="tabpanel-fakt" aria-selected="true">Fakt</button>
+              <button id="tab-code" type="button" role="tab" aria-controls="tabpanel-code" aria-selected="false">Code</button>
+              <button id="tab-verlauf" type="button" role="tab" aria-controls="tabpanel-verlauf" aria-selected="false">Verlauf</button>
+            </div>
+            <div class="panel-body" id="panel-body"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="open-section" id="offen">
+        <div class="section-heading"><div class="sec-head"><h2>Was ist offen</h2><span class="sec-n">03</span></div><span id="open-count" class="count-pill"></span></div>
+        <div class="open-grid" id="open-grid"></div>
+      </section>
+
+      <section class="archive" aria-label="Vertiefende Materialien">
+        <details id="commits-details">
+          <summary><span>Commits</span><small>1 Einträge</small></summary>
+          <div class="table-wrap"><table><thead><tr><th>Kürzel</th><th>Nachricht</th><th>Ort</th></tr></thead><tbody id="commits-body"></tbody></table></div>
+        </details>
+        <details id="sessions-details">
+          <summary><span>Sessions</span><small>1 Einträge</small></summary>
+          <div class="table-wrap"><table><thead><tr><th>Session</th><th>Zeit</th><th>Titel</th></tr></thead><tbody id="sessions-body"></tbody></table></div>
+        </details>
+        <details id="rules-details">
+          <summary><span>Regeln</span><small id="rules-count"></small></summary>
+          <div class="rule-list" id="rules-body"></div>
+        </details>
+        <details id="grill-details">
+          <summary><span>6 Skizzen-Punkte</span><small>wörtliche Abschrift</small></summary>
+          <div class="table-wrap"><table class="grill-table"><thead><tr><th>Nr.</th><th>Notiz</th><th>Status</th><th>Beleg</th></tr></thead><tbody id="grill-body"></tbody></table></div>
+        </details>
+      </section>
+      <footer>Quelle: examples/minimal/flow.json (fiktiv)</footer>
+    </main>
+  </div>
+
+  <div class="original-overlay" id="original-overlay" role="dialog" aria-modal="true" aria-label="Original-Notiz" aria-hidden="true">
+    <div class="original-toolbar"><span>Original-Notiz · Demo-Skizze</span><button class="icon-button" id="original-close" type="button" aria-label="Original-Notiz schließen">×</button></div>
+    <img src="notiz.png" alt="Original-Notiz Demo-Skizze">
+  </div>
+
+  <script type="application/json" id="flow">{"commit": "0000000", "branch": "main", "stages": [{"id": "ein", "name": "Eingabe"}, {"id": "verarb", "name": "Verarbeitung"}, {"id": "aus", "name": "Ausgabe"}], "nodes": [{"id": "lesen", "label": "Eingabe: Datei lesen", "stage": "ein", "row": 0, "col": 1, "status": "stimmt-noch", "punkt": "1", "was": "Liest todo.txt zeilenweise.", "warum": "Stimmt: read_lines() öffnet die Datei und liefert Zeilen.", "zahlen": ["1 Datei"], "next": ["parse"], "belege": [{"quote": "def read_lines(path):", "marker": "BELEGT", "quelle": "todo/io.py:3", "url": null}]}, {"id": "parse", "label": "parse() → Liste", "stage": "verarb", "row": 0, "col": 1, "status": "geaendert", "punkt": "2", "was": "Zerlegt Zeilen in Aufgaben.", "warum": "Geändert: parse() liefert inzwischen Task-Objekte statt Strings.", "next": ["raute"], "belege": [{"quote": "return [Task.from_line(l) for l in lines]", "marker": "BELEGT", "quelle": "todo/parse.py:12", "url": null}, {"quote": "Mit 10 000 Zeilen getestet: 0,4 s", "marker": "OFFLINE", "quelle": "tests/test_perf.py", "url": null}], "snippets": [{"file": "todo/parse.py", "start": 10, "end": 12, "code": "def parse(lines):\n    lines = [l for l in lines if l.strip()]\n    return [Task.from_line(l) for l in lines]", "url": null}]}, {"id": "raute", "label": "gültig?", "shape": "raute", "stage": "verarb", "row": 1, "col": 1, "status": "teilweise", "punkt": "3", "was": "Prüft jede Aufgabe.", "warum": "Teilweise: leere Zeilen werden still verworfen, nicht als Fehler gemeldet.", "next": ["sort", "fehler"], "offen": ["leer"], "belege": [{"quote": "lines = [l for l in lines if l.strip()]", "marker": "BELEGT", "quelle": "todo/parse.py:11", "url": null}]}, {"id": "sort", "label": "ja → sortieren", "stage": "verarb", "row": 2, "col": 0, "status": "stimmt-noch", "punkt": "4", "was": "Sortiert nach Fälligkeit.", "warum": "Stimmt.", "next": ["druck"], "belege": [{"quote": "Auf dem Laptop sortiert ausgegeben", "marker": "GERAET", "quelle": "Session 2, 14:10", "url": null}]}, {"id": "fehler", "label": "nein → Fehler", "stage": "verarb", "row": 2, "col": 2, "status": "unklar", "punkt": "5", "was": "Meldet ungültige Aufgaben.", "warum": "Unklar: kein Fehlerpfad im Code gefunden; Mensch fragen.", "belege": [{"quote": "Wahrscheinlich in einem älteren Branch", "marker": "HYPOTHESE", "quelle": "—", "url": null}]}, {"id": "druck", "label": "Ausgabe: drucken", "stage": "aus", "row": 0, "col": 1, "status": "stimmt-noch", "punkt": "6", "was": "Druckt die Liste ins Terminal.", "warum": "Stimmt.", "belege": [{"quote": "print(format_table(tasks))", "marker": "BELEGT", "quelle": "todo/cli.py:20", "url": null}]}], "sessions": {"S1": {"id": "demo-1", "zeit": "01.01. 10:00–11:00", "titel": "Parser auf Task-Objekte umgestellt"}}, "commits": [{"short": "0000000", "url": null, "msg": "Demo-Commit (fiktiv)", "wo": "nur lokal"}], "regeln": {}, "docs": {}, "offen": [{"id": "leer", "titel": "Leere Zeilen", "text": "Sollen leere Zeilen als Fehler gemeldet werden?", "quelle": "S1"}], "stats": {"status_count": {"stimmt-noch": 3, "geaendert": 1, "anders": 0, "teilweise": 1, "unklar": 1}, "sessions": 1, "commits_auf_github": 0, "commits_lokal": 1, "offene_punkte": 1, "skizzen_punkte": 6}}</script>
+  <script type="application/json" id="meta">{"point_label": "Skizzen-Punkt", "points_label": "Skizzen-Punkte", "code_ref": "main", "callout_offen_id": "leer", "theme_key": "papier-abgleich-theme"}</script>
+  <script type="application/json" id="grill-table">[["1", "Eingabe: Datei lesen", "stimmt noch", "read_lines()"], ["2", "parse() → Liste", "geändert", "Task-Objekte"], ["3", "gültig?", "teilweise", "leere Zeilen still verworfen"], ["4", "ja → sortieren", "stimmt noch", ""], ["5", "nein → Fehler", "unklar", "kein Fehlerpfad"], ["6", "Ausgabe: drucken", "stimmt noch", "print"]]</script>
+  <script src="app.js"></script>
+</body>
+</html>

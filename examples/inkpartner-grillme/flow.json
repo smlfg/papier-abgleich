@@ -1,0 +1,1346 @@
+{
+ "commit": "0bfccb439cf2d628fcf241d6caae3b4738015037",
+ "branch": "watch/write-gap",
+ "nodes": [
+  {
+   "id": "bild",
+   "label": "Bild → VLM",
+   "row": 0,
+   "col": 0,
+   "status": "stimmt-noch",
+   "punkt": "1",
+   "fakt": "agent.read rendert nur die Schülertinte (authors=(\"user\",)) als ein Bild und schickt es mit READ_PROMPT ans VLM.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 71,
+     "end": 77,
+     "code": "def read(model, strokes: list[dict], background=None) -> tuple[str, list[Element]]:\n    \"\"\"Student strokes -> (subject, elements). Agent ink is left out of the picture on purpose.\n    `background`: the printed page (PDF) under the ink - then the exercise text is read too.\"\"\"\n    img = pagemod.render(strokes, authors=(\"user\",), background=background, crop=True)\n    fx0, fy0, fx1, fy1 = img.info[\"frame\"]       # the image covers this part of the page\n    data = model.json([pagemod.png_bytes(img)], READ_PROMPT + (PRINTED if background is not None else \"\"),\n                      READ_SCHEMA)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L71-L77"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "agent"
+   ],
+   "stage": "lesen",
+   "was": "Der Watcher holt die Seite, rendert nur die Striche des Schülers zu einem Bild und schickt es mit dem Lese-Prompt an das Vision-Modell (VLM).",
+   "warum": "So steht es in agent.read: authors=(\"user\",) – Agententinte bleibt absichtlich draußen.",
+   "zahlen": [
+    "Modell: ollama:qwen3.6:35b-a3b",
+    "Eine Runde: 7–25 s",
+    "Volle Lesung 3,2 s, billige Erkennung 1,0 s (S3)",
+    "rmscene-Warnung: 111 unbekannte Bytes im Seitenkopf (Offset 176–286), nicht aus den Strichen"
+   ],
+   "regeln": [
+    "R17"
+   ],
+   "offen": [
+    "ownink"
+   ],
+   "verlauf": [
+    {
+     "ref": "S2",
+     "text": "docs/LESEN.md mit Mermaid-Diagramm der Lese-Pipeline, 97 Unit-Tests grün",
+     "commit": "6aa80de",
+     "url": "https://github.com/smlfg/inkpartner/commit/6aa80decf6cd0faa2c14e985a780fa7651444997"
+    },
+    {
+     "ref": "S3",
+     "text": "Messung auf der echten Seite: Erkennung 1,0 s, Lesung 3,2 s",
+     "url": null
+    }
+   ],
+   "docs": [
+    {
+     "name": "LESEN.md",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/docs/LESEN.md"
+    }
+   ]
+  },
+  {
+   "id": "agent",
+   "label": "Agent",
+   "row": 0,
+   "col": 2,
+   "status": "stimmt-noch",
+   "punkt": "1",
+   "fakt": "review.run ruft agent.read und danach agent.judge; jede Runde geht das Bild also zweimal ans VLM (Session S1).",
+   "snippets": [
+    {
+     "file": "src/inkpartner/review.py",
+     "start": 37,
+     "end": 52,
+     "code": "    if elements is None:\n        from .geometry import snap\n        if reader:      # readers without a background parameter keep working on plain pages\n            guessed, elements = reader(strokes, background=background) if background is not None else reader(strokes)\n        else:\n            guessed, elements = agent.read(model, strokes, background)\n        elements = snap(elements, strokes)           # marks land on the real ink, not the model's guess\n        subject = subject or guessed\n    times[\"read\"] = round(time.time() - t, 1)\n    t = time.time()\n    subject = subject or \"math\"\n    profile = profiles.get(subject)\n    checked = mathcheck.check_steps(elements) if profile.deterministic == \"sympy\" else {}\n    if proposals is None:\n        proposals = agent.judge(judge_model or model, strokes, elements, profile, checked=checked,\n                                background=background)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/review.py#L37-L52"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "fach",
+    "element"
+   ],
+   "stage": "lesen",
+   "was": "review.run ist der Agent: Er liest (agent.read), wählt das Profil und lässt dann urteilen (agent.judge).",
+   "warum": "Ablauf in review.run; jede Runde schickt das Bild zweimal ans VLM – read und judge.",
+   "zahlen": [
+    "2 VLM-Aufrufe pro Runde (S1)",
+    "Erkenner 0,9 s vs. volle Lesung 3,1 s (S2, Branch try/recognize-then-prompt)"
+   ],
+   "regeln": [
+    "R8"
+   ],
+   "offen": [
+    "push",
+    "blocking"
+   ],
+   "verlauf": [
+    {
+     "ref": "S1",
+     "text": "Befund: Bild geht zweimal ans VLM; Gegenentwurf „erst erkennen, dann Prompt“ als 9ba24a5 (nur lokal)",
+     "url": null
+    },
+    {
+     "ref": "S2",
+     "text": "Erkenner ist schneller, ersetzt die Lesung aber nicht",
+     "url": null
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "fach",
+   "label": "Fach „List“",
+   "row": 1,
+   "col": 1,
+   "status": "teilweise",
+   "punkt": "2",
+   "fakt": "read() gibt (subject, elements) zurück. Das Fach kommt aus einer festen Liste: math, code, diagram, pm, prose. „Erst erkennen, dann Prompt“ (9ba24a5) existiert nur lokal, nicht auf GitHub, deshalb ohne Link.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 17,
+     "end": 24,
+     "code": "    \"type\": \"object\",\n    \"properties\": {\n        \"subject\": {\"type\": \"string\", \"enum\": [\"math\", \"code\", \"diagram\", \"pm\", \"prose\"]},\n        \"elements\": {\"type\": \"array\", \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"kind\": {\"type\": \"string\", \"enum\": list(KINDS)},\n                \"text\": {\"type\": \"string\"},",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L17-L24"
+    },
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 87,
+     "end": 87,
+     "code": "    return data[\"subject\"], els",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L87-L87"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "klasse"
+   ],
+   "stage": "lesen",
+   "was": "Das Modell nennt das Fach der Seite. Erlaubt sind genau fünf: math, code, diagram, pm, prose.",
+   "warum": "Im Kern wie skizziert; die „Liste“ ist das enum im READ_SCHEMA. 9ba24a5 (erst erkennen) ist nicht auf GitHub.",
+   "zahlen": [
+    "5 Fächer"
+   ],
+   "regeln": [
+    "R18"
+   ],
+   "offen": [
+    "push"
+   ],
+   "verlauf": [
+    {
+     "ref": "S5",
+     "text": "Runde 13 in validate-metrics.jsonl: „3 plus 3“ wurde als code eingestuft",
+     "url": null
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "element",
+   "label": "Element: Text · Bild · Frag",
+   "row": 1,
+   "col": 2,
+   "status": "teilweise",
+   "punkt": "2",
+   "fakt": "Elementarten im Code: line, formula, code, text, node, edge, arrow, box, table, drawing, printed. „Bild“ und „Frage“ gibt es nicht als Art; eine Frage wie „= ?“ erkennt asks_for_help.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/elements.py",
+     "start": 15,
+     "end": 15,
+     "code": "KINDS = (\"line\", \"formula\", \"code\", \"text\", \"node\", \"edge\", \"arrow\", \"box\", \"table\", \"drawing\", \"printed\")",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/elements.py#L15-L15"
+    },
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 117,
+     "end": 120,
+     "code": "def asks_for_help(e: Element) -> bool:\n    \"\"\"A line with a question - '(3x+4y)^3 = ?' - is a request, not an answer to check.\"\"\"\n    from .elements import ASK\n    return bool(ASK.search(e.text or \"\"))",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L117-L120"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "klasse"
+   ],
+   "stage": "lesen",
+   "was": "Die Seite wird in Elemente zerlegt, jedes mit Box, Text, Sicherheit und Lesbarkeit. Fragen wie „= ?“ werden als Hilfe-Anfrage erkannt.",
+   "warum": "Elementarten im Code sind line, formula, code, text, node, edge, arrow, box, table, drawing, printed – kein eigenes „Bild“ oder „Frage“.",
+   "zahlen": [
+    "11 Elementarten"
+   ],
+   "regeln": [
+    "R5"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "klasse",
+   "label": "Fach „Klasse“ mit Satz an Hilfsmitteln → Profil",
+   "row": 2,
+   "col": 1,
+   "status": "stimmt-noch",
+   "punkt": "3",
+   "fakt": "profiles.py: ein Profile je Fach (math, code, diagram, pm, prose) mit Judge-Prompt, erlaubten Zeichen und max_actions.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/profiles.py",
+     "start": 13,
+     "end": 21,
+     "code": "@dataclass(frozen=True)\nclass Profile:\n    name: str\n    judge: str                          # instructions for the judging model\n    marks: frozenset = ALL_MARKS\n    note_max_chars: int = 60\n    help_max_chars: int = 140           # an answer to \"= ?\" may be a little longer than a mark\n    max_actions: int = 4\n    deterministic: str | None = None    # name of a checker that can overrule the model",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/profiles.py#L13-L21"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "def"
+   ],
+   "stage": "verstehen",
+   "was": "Jedes Fach hat ein Profil: Judge-Prompt, erlaubte Zeichen, Notizlänge, max. Zeichen pro Runde und optional einen festen Prüfer.",
+   "warum": "Genau wie skizziert: das Profil ist der „Satz an Hilfsmitteln“.",
+   "zahlen": [
+    "Notiz max. 60 Zeichen (Mathe 40)",
+    "Hilfe max. 140 Zeichen"
+   ],
+   "regeln": [
+    "R18",
+    "R7"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "def",
+   "label": "Def: Judge-Prompts · erlaubte Zeichen",
+   "row": 3,
+   "col": 0,
+   "status": "stimmt-noch",
+   "punkt": "4",
+   "fakt": "Genau das definiert ein Profil: Profile.judge (Prompt) und Profile.marks (erlaubte Zeichen).",
+   "snippets": [
+    {
+     "file": "src/inkpartner/profiles.py",
+     "start": 30,
+     "end": 36,
+     "code": "PROFILES = {\n    \"math\": Profile(\n        \"math\",\n        COMMON + \" Subject: mathematics. Each line is a step. Check whether each step follows from the \"\n        \"previous one. Point at the first wrong step (circle) and name the rule that was broken in a \"\n        \"note (e.g. 'Distributivgesetz?'), never the corrected result.\",\n        note_max_chars=40, deterministic=\"sympy\"),",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/profiles.py#L30-L36"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "test"
+   ],
+   "stage": "verstehen",
+   "was": "Der Judge-Prompt setzt sich aus einem gemeinsamen Tutor-Text (COMMON) und dem Fachteil zusammen; dazu kommt die Liste der erlaubten Zeichen.",
+   "warum": "Profile.judge + Profile.marks entsprechen der Definition in der Notiz.",
+   "zahlen": [],
+   "regeln": [
+    "R7",
+    "R5"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "test",
+   "label": "3+3=4  →  Bild → VLM",
+   "row": 4,
+   "col": 0,
+   "status": "teilweise",
+   "punkt": "5",
+   "fakt": "Testfall aus der Skizze. Mathe hat einen deterministischen Prüfer (sympy), der das Urteil des Modells überstimmen kann.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/review.py",
+     "start": 47,
+     "end": 52,
+     "code": "    subject = subject or \"math\"\n    profile = profiles.get(subject)\n    checked = mathcheck.check_steps(elements) if profile.deterministic == \"sympy\" else {}\n    if proposals is None:\n        proposals = agent.judge(judge_model or model, strokes, elements, profile, checked=checked,\n                                background=background)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/review.py#L47-L52"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "mathe"
+   ],
+   "stage": "verstehen",
+   "was": "Dein Testfall 3+3=4. Für Mathe prüft sympy die Rechnung zusätzlich und kann das Modell überstimmen.",
+   "warum": "Teilweise: Fach Mathe ja, eine eigene „Art“ gibt es nicht.",
+   "zahlen": [
+    "3+3=7 allein auf einer Seite bekam keine Marke (S3)"
+   ],
+   "regeln": [
+    "R4"
+   ],
+   "offen": [],
+   "verlauf": [
+    {
+     "ref": "S3",
+     "text": "plan.validate verwarf den Kreis: „no task on the page to judge this line against“. Fix (_number_chain) – laut Sessions verwandt mit 6fc0a84 auf dem Claude-Branch",
+     "commit": "6fc0a84",
+     "url": "https://github.com/smlfg/inkpartner/commit/6fc0a84b6b7ed5f5fc5b5a04ca2b60f878958b19"
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "mathe",
+   "label": "Fach: Mathe · Art: Rechnung → VLM-Promptvorlagen",
+   "row": 5,
+   "col": 0,
+   "status": "teilweise",
+   "punkt": "5",
+   "fakt": "Das Mathe-Profil gibt es; eine eigene „Art“ (Rechnung) gibt es nicht. Die Promptvorlage ist profile.judge plus feste Regeln in agent.judge.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 100,
+     "end": 105,
+     "code": "    prompt = (f\"{profile.judge}\\n\\nElements on the page:\\n{listing}\\n{facts}\\n\"\n              \"Propose at most a few actions. Marks: check/underline for correct; circle, underline or a \"\n              \"note for wrong; question or note for a hint; wavy for unreadable. If the student asks for \"\n              \"help (asks_for_help, a question mark, '= ?', 'Hilfe', a task with no own work yet), answer \"\n              \"with verdict 'help', mark 'note': say in German what the problem is and the very next step \"\n              f\"or the rule to use, at most {profile.help_max_chars} characters, never the result. \"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L100-L105"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "urteil"
+   ],
+   "stage": "verstehen",
+   "was": "Der Prompt fürs Urteil = Profiltext + Elementliste + Ergebnisse des Prüfers + feste Regeln für Zeichen und Hilfe.",
+   "warum": "Promptvorlage ja (profile.judge), aber keine eigene Art „Rechnung“.",
+   "zahlen": [],
+   "regeln": [
+    "R7"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "urteil",
+   "label": "output: Vorschlag · URTEIL = Boolean · Zeichen = Korrekturmarke",
+   "row": 6,
+   "col": 1,
+   "status": "anders",
+   "punkt": "6",
+   "fakt": "Das Urteil ist nicht boolesch, sondern 5-wertig: correct, wrong, hint, unreadable, help. Die Farbe folgt dem Urteil (VERDICT_COLOR), nicht dem Modell.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 53,
+     "end": 54,
+     "code": "            \"verdict\": {\"type\": \"string\", \"enum\": [\"correct\", \"wrong\", \"hint\", \"unreadable\", \"help\"]},\n            \"mark\": {\"type\": \"string\", \"enum\": [\"check\", \"underline\", \"circle\", \"wavy\", \"question\", \"note\"]},",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L53-L54"
+    },
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 14,
+     "end": 19,
+     "code": "VERDICT_COLOR = {\"correct\": \"green\", \"wrong\": \"red\", \"hint\": \"blue\", \"unreadable\": \"gray\", \"help\": \"blue\"}\nMARKS_FOR = {\"correct\": {\"check\", \"underline\"},\n             \"wrong\": {\"circle\", \"underline\", \"note\"},\n             \"hint\": {\"question\", \"note\"},\n             \"unreadable\": {\"wavy\"},\n             \"help\": {\"note\"}}",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L14-L19"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "sechs"
+   ],
+   "stage": "urteilen",
+   "was": "Der Judge schlägt Aktionen vor: Element, Urteil, Zeichen, optional Notiztext und ein gesprochener Satz.",
+   "warum": "Anders als skizziert: das Urteil ist nicht Boolean, sondern hat 5 Werte (correct, wrong, hint, unreadable, help). Die Farbe kommt aus dem Urteil, nicht vom Modell.",
+   "zahlen": [
+    "5 Urteile",
+    "Farben: grün / rot / blau / grau / blau"
+   ],
+   "regeln": [
+    "R3",
+    "R5"
+   ],
+   "offen": [
+    "black"
+   ],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "sechs",
+   "label": "für Mathe: 6 Stück — Haken · unterstreichen · Kreis · unlesbar · ? · Wort/Text",
+   "row": 7,
+   "col": 0,
+   "status": "stimmt-noch",
+   "punkt": "7",
+   "fakt": "ALL_MARKS = check, underline, circle, wavy, question, note — sechs Zeichen, auf main und watch/write-gap gleich.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/profiles.py",
+     "start": 10,
+     "end": 10,
+     "code": "ALL_MARKS = frozenset({\"check\", \"underline\", \"circle\", \"wavy\", \"question\", \"note\"})",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/profiles.py#L10-L10"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "max4"
+   ],
+   "stage": "urteilen",
+   "was": "Sechs Zeichen: Haken, unterstreichen, Kreis, Wellenlinie (unlesbar), Fragezeichen, Notiz.",
+   "warum": "Stimmt: ALL_MARKS hat genau diese sechs, auf main und watch/write-gap gleich.",
+   "zahlen": [
+    "6 Zeichen"
+   ],
+   "regeln": [
+    "R6",
+    "R5"
+   ],
+   "offen": [
+    "black"
+   ],
+   "verlauf": [
+    {
+     "ref": "S7",
+     "text": "Kreise und eine Notiz (107 Striche, 4,4 s) kamen per sent_direct an, später eine Notiz mit 162 Strichen",
+     "url": null
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "max4",
+   "label": "Pro Runde max 4 Zeichen ≙ watcher 1,5 s → review",
+   "row": 8,
+   "col": 0,
+   "status": "geaendert",
+   "punkt": "8 · 9",
+   "fakt": "max_actions=4 (Default, gilt für Mathe; pm/prose 3), höchstens 1 Hilfe-Notiz pro Runde. Watcher-Takt --interval 1,5 s stimmt. Neu in 0bfccb4: Modell-Timeout 45 s im Watcher (vorher 600 s) und 10 s R-COOLDOWN nach jedem Schreiben.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 109,
+     "end": 118,
+     "code": "    # Small and incremental beats one big throw: at most N actions per round, errors first.\n    order = {\"help\": 0, \"wrong\": 1, \"unreadable\": 2, \"hint\": 3, \"correct\": 4}\n    out.accepted.sort(key=lambda a: order[a.verdict])\n    helps = [a for a in out.accepted if a.verdict == \"help\"]\n    for a in helps[1:]:                                # one answer to one question per round\n        out.accepted.remove(a)\n        out.rejected.append((a, \"only one help note per round\"))\n    for a in out.accepted[profile.max_actions:]:\n        out.rejected.append((a, \"over the per-round limit\"))\n    out.accepted = out.accepted[:profile.max_actions]",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L109-L118"
+    },
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 813,
+     "end": 825,
+     "code": "def run(host=\"remarkable\", model=None, subject=None, interval_s=1.5, once=False, **kw):\n    \"\"\"Loop forever (or until the first review with --once). Stops for good on the kill switch.\"\"\"\n    from . import models\n    from .guards import Stopped\n    tablet = Tablet(host, monitor=PenMonitor(host),\n                    allow_restart=kw.get(\"allow_restart\", False))\n    w = Watcher(tablet, models.get(model), subject=subject, **kw)\n    # A call that never returns blocks every other page. Live rounds on 24.10. finished\n    # within 15 s; the page-5 call was still inside the request after 200 s while page 6 waited.\n    for m in getattr(w.model, \"models\", []):\n        if hasattr(m, \"timeout\"):\n            m.timeout = 45\n    w.log(f\"watching {host} every {interval_s}s with {w.model.name}; pen path: {'yes' if w.pen else 'no'}\")",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L813-L825"
+    },
+    {
+     "file": "src/inkpartner/guards.py",
+     "start": 103,
+     "end": 105,
+     "code": "        gap = now - self.state.last_write_at\n        if gap < L.write_gap_s:\n            raise GuardError(f\"R-COOLDOWN: last write finished {gap:.0f}s ago (< {L.write_gap_s:.0f}s)\")",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/guards.py#L103-L105"
+    }
+   ],
+   "commits": [
+    {
+     "short": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "next": [
+    "judge"
+   ],
+   "stage": "urteilen",
+   "was": "Pro Runde höchstens 4 Zeichen (pm/prose 3), höchstens eine Hilfe-Notiz. Der Watcher schaut alle 1,5 s nach.",
+   "warum": "Takt und Limit stimmen. Neu in 0bfccb4: 10 s Pause nach jedem Schreiben (R-COOLDOWN) und 45 s Modell-Timeout statt 600 s.",
+   "zahlen": [
+    "--interval 1,5 s",
+    "max_actions 4 / 3",
+    "Timeout 600 s → 45 s",
+    "R-COOLDOWN 10 s",
+    "py-spy: 65 % Warten auf Lesethreads, 10,6 % Modell, 6,9 % SSH (S7)"
+   ],
+   "regeln": [
+    "R9",
+    "R-COOLDOWN"
+   ],
+   "offen": [
+    "blocking"
+   ],
+   "verlauf": [
+    {
+     "ref": "S2",
+     "text": "Modell-Timeout 600 s → 45 s",
+     "url": null
+    },
+    {
+     "ref": "S5",
+     "text": "R-COOLDOWN eingeführt, ab Watcher-PID 14159 (00:20) geladen",
+     "url": null
+    },
+    {
+     "ref": "S7",
+     "text": "py-spy 0.4.2, 71.730 Samples",
+     "url": null
+    },
+    {
+     "ref": "0bfccb4",
+     "text": "beides committet auf watch/write-gap",
+     "commit": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "judge",
+   "label": "Agent wählt Zeichen: return → judge.py → plan.py",
+   "row": 9,
+   "col": 0,
+   "status": "anders",
+   "punkt": "10",
+   "fakt": "Es gibt kein judge.py. Der Judge ist agent.judge in agent.py; den Ablauf steuert review.run.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 90,
+     "end": 92,
+     "code": "def judge(model, strokes: list[dict], elements: list[Element], profile, *,\n          checked: dict[str, str] | None = None, background=None) -> list[tuple[Action, str]]:\n    \"\"\"Elements -> proposed actions (with optional speech). The rules in plan.validate decide.\"\"\"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L90-L92"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "validate"
+   ],
+   "stage": "urteilen",
+   "was": "agent.judge ruft das Modell mit Bild, Elementliste und Profil-Prompt auf und gibt Aktions-Vorschläge zurück. Die Regeln entscheiden danach in plan.validate.",
+   "warum": "Anders benannt: es gibt kein judge.py; der Judge ist eine Funktion in agent.py.",
+   "zahlen": [],
+   "regeln": [
+    "R7"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "validate",
+   "label": "dort fängt validate an · validate.py ist harter Check · funktioniert 80 % — ist zu streng",
+   "row": 10,
+   "col": 0,
+   "status": "geaendert",
+   "punkt": "11",
+   "fakt": "Kein validate.py: plan.validate() steht in plan.py. „Zu streng“ passt zu den Sessions: R-VIEWPORT (Passung 0,00) und R-RATE blockierten Zustellungen. R-PEN-NEAR ist in 0bfccb4 per „if False“ abgeschaltet, nicht repariert.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 52,
+     "end": 57,
+     "code": "def validate(actions: list[Action], elements: list[Element], profile, *, delivered: set[str] = frozenset(),\n             overrides: dict[str, str] | None = None, placed: list | None = None) -> Review:\n    \"\"\"Apply the interaction rules. `overrides` maps element id -> verdict from a deterministic\n    checker (e.g. sympy); a model verdict that contradicts it is rejected. `placed` lists\n    (bbox, verdict) already on the page: a green is never followed by a red on the same, unchanged\n    ink (or the reverse) - round 3 on real pages: readings wavered between rounds and lines got both.\"\"\"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L52-L57"
+    },
+    {
+     "file": "src/inkpartner/guards.py",
+     "start": 99,
+     "end": 110,
+     "code": "        # Suspended: this check was blocking delivery while the pen was away.\n        # The condition stays here so it can be turned back on.\n        if False and (pen_idle_s is None or pen_idle_s < L.pen_away_s):\n            raise GuardError(\"R-PEN-NEAR: the real pen is (or may be) in range\")\n        gap = now - self.state.last_write_at\n        if gap < L.write_gap_s:\n            raise GuardError(f\"R-COOLDOWN: last write finished {gap:.0f}s ago (< {L.write_gap_s:.0f}s)\")\n        if not viewport_ok:\n            raise GuardError(\"R-VIEWPORT: viewport not known to match the calibration\")\n        self.state.pen_times = [t for t in self.state.pen_times if now - t < 60]\n        if len(self.state.pen_times) >= L.pen_per_minute:\n            raise GuardError(\"R-RATE: too many pen deliveries in the last minute\")",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/guards.py#L99-L110"
+    },
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 63,
+     "end": 104,
+     "code": "    for a in actions:\n        el = by_id.get(a.element)\n        reason = None\n        if el is None:\n            reason = \"unknown element\"\n        elif el.kind == \"printed\":\n            reason = \"printed exercise text is never marked\"\n        elif a.verdict not in VERDICT_COLOR:\n            reason = f\"unknown verdict {a.verdict!r}\"\n        elif a.mark not in MARKS_FOR[a.verdict] or a.mark not in profile.marks:\n            reason = f\"mark {a.mark!r} not allowed for {a.verdict!r} in {profile.name}\"\n        elif a.verdict == \"help\" and not asked:\n            reason = \"nobody asked for help on this page\"\n        elif a.verdict == \"help\" and a.element not in helpable:\n            reason = \"help only where the question is (or the task right before it)\"\n        elif a.verdict == \"correct\" and not el.certain:\n            reason = \"uncertain reading is never confirmed green\"\n        elif a.verdict in (\"correct\", \"wrong\") and not el.legible:\n            reason = \"illegible element can only get a wavy line\"\n        elif a.verdict in (\"correct\", \"wrong\") and not (el.text or \"\").strip():\n            # round 6: check marks on the circles of a drawn network - there was nothing to judge\n            reason = \"nothing written to judge\"\n        elif (a.verdict in (\"correct\", \"wrong\") and profile.deterministic == \"sympy\"\n              and el.id not in overrides and not has_task(el, elements) and not _number_chain(el)):\n            # round 7: without the PDF the model confirmed 'a^2+b^2' and \"f'(x)=3x\" - right or\n            # wrong only relative to a task it could not see\n            reason = \"no task on the page to judge this line against\"\n        elif a.verdict in (\"correct\", \"wrong\") and any(\n                v in (\"correct\", \"wrong\") and v != a.verdict and _iou(b, el.bbox) > 0.8 for b, v in placed or []):\n            reason = \"contradicts feedback already on the page (the ink has not changed)\"\n        elif a.verdict in (\"correct\", \"wrong\") and any(\n                v == a.verdict and _iou(b, el.bbox) > 0.6 for b, v in placed or []):\n            reason = \"already on the page\"\n        elif el.id in overrides and a.verdict in (\"correct\", \"wrong\") and overrides[el.id] != a.verdict:\n            reason = f\"contradicts the deterministic check ({overrides[el.id]})\"\n        elif a.mark == \"note\" and not a.text.strip():\n            reason = \"empty note\"\n        elif a.mark == \"note\" and len(a.text) > (profile.help_max_chars if a.verdict == \"help\"\n                                                   else profile.note_max_chars):\n            reason = \"note too long\"\n        elif a.key(el) in delivered:\n            reason = \"already on the page\"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L63-L104"
+    }
+   ],
+   "commits": [
+    {
+     "short": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "next": [
+    "inputs"
+   ],
+   "stage": "pruefen",
+   "was": "plan.validate prüft jeden Vorschlag gegen harte Regeln (Element existiert, Zeichen erlaubt, kein Widerspruch zum Prüfer, Notizlänge, nicht doppelt). Danach prüfen die Guards jede Stift-Zustellung.",
+   "warum": "Datei anders (plan.py statt validate.py), Inhalt stimmt. „Zu streng“ deckt sich mit den Sessions: R-VIEWPORT und R-RATE blockierten; R-PEN-NEAR wurde abgeschaltet.",
+   "zahlen": [
+    "R-RATE: 4 Zustellungen pro Minute",
+    "R-PEN-NEAR: 3 s seit letztem Event auf event2",
+    "Passung 0,00 bei R-VIEWPORT (Seite 7)"
+   ],
+   "regeln": [
+    "R5",
+    "R13",
+    "R-VIEWPORT",
+    "R-RATE",
+    "R-PEN-NEAR",
+    "R-COOLDOWN",
+    "R-OPEN"
+   ],
+   "offen": [
+    "guards",
+    "pennear"
+   ],
+   "verlauf": [
+    {
+     "ref": "S3",
+     "text": "validate verwarf den Kreis für 3+3=7",
+     "url": null
+    },
+    {
+     "ref": "S5",
+     "text": "R-PEN-NEAR per if False aus (00:08)",
+     "url": null
+    },
+    {
+     "ref": "0bfccb4",
+     "text": "committet",
+     "commit": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "inputs",
+   "label": "Vorschläge vom Judge + Element-Liste + Fach-Profil",
+   "row": 10,
+   "col": 2,
+   "status": "stimmt-noch",
+   "punkt": "12",
+   "fakt": "Genau die Signatur: validate(actions, elements, profile, …).",
+   "snippets": [
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 52,
+     "end": 53,
+     "code": "def validate(actions: list[Action], elements: list[Element], profile, *, delivered: set[str] = frozenset(),\n             overrides: dict[str, str] | None = None, placed: list | None = None) -> Review:",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L52-L53"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "raute"
+   ],
+   "stage": "pruefen",
+   "was": "validate bekommt die Vorschläge des Judge, die Elementliste und das Fach-Profil – plus was schon auf der Seite steht.",
+   "warum": "Stimmt: genau die Signatur.",
+   "zahlen": [],
+   "regeln": [],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "raute",
+   "label": "◇ yes / no",
+   "row": 11,
+   "col": 1,
+   "status": "stimmt-noch",
+   "punkt": "13",
+   "fakt": "Jede Aktion bekommt entweder einen Ablehnungsgrund (no) oder landet in out.accepted (yes).",
+   "snippets": [
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 105,
+     "end": 108,
+     "code": "        if reason:\n            out.rejected.append((a, reason))\n        else:\n            out.accepted.append(a)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L105-L108"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "prio",
+    "verworfen"
+   ],
+   "stage": "pruefen",
+   "was": "Für jeden Vorschlag: gibt es einen Ablehnungsgrund, landet er in rejected, sonst in accepted.",
+   "warum": "Stimmt wie gezeichnet.",
+   "zahlen": [],
+   "regeln": [
+    "R5"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "prio",
+   "label": "yes → gesammelt + sortiert nach Prio → draw",
+   "row": 12,
+   "col": 0,
+   "status": "stimmt-noch",
+   "punkt": "13",
+   "fakt": "Sortierung help < wrong < unreadable < hint < correct, danach Kürzung auf max_actions.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 109,
+     "end": 111,
+     "code": "    # Small and incremental beats one big throw: at most N actions per round, errors first.\n    order = {\"help\": 0, \"wrong\": 1, \"unreadable\": 2, \"hint\": 3, \"correct\": 4}\n    out.accepted.sort(key=lambda a: order[a.verdict])",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L109-L111"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "draw"
+   ],
+   "stage": "pruefen",
+   "was": "Angenommene Aktionen werden sortiert – Hilfe zuerst, dann falsch, unlesbar, Hinweis, richtig – und auf max_actions gekürzt.",
+   "warum": "Stimmt.",
+   "zahlen": [
+    "Reihenfolge help < wrong < unreadable < hint < correct"
+   ],
+   "regeln": [
+    "R9"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "verworfen",
+   "label": "no → verworfen List",
+   "row": 12,
+   "col": 2,
+   "status": "stimmt-noch",
+   "punkt": "13",
+   "fakt": "out.rejected hält jede verworfene Aktion mit Grund, auch „only one help note per round“ und „over the per-round limit“.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 38,
+     "end": 41,
+     "code": "@dataclass\nclass Review:\n    accepted: list[Action] = field(default_factory=list)\n    rejected: list[tuple[Action, str]] = field(default_factory=list)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L38-L41"
+    },
+    {
+     "file": "src/inkpartner/plan.py",
+     "start": 112,
+     "end": 117,
+     "code": "    helps = [a for a in out.accepted if a.verdict == \"help\"]\n    for a in helps[1:]:                                # one answer to one question per round\n        out.accepted.remove(a)\n        out.rejected.append((a, \"only one help note per round\"))\n    for a in out.accepted[profile.max_actions:]:\n        out.rejected.append((a, \"over the per-round limit\"))",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/plan.py#L112-L117"
+    }
+   ],
+   "commits": [],
+   "next": [],
+   "stage": "pruefen",
+   "was": "Jede verworfene Aktion bleibt mit Grund erhalten, z. B. „over the per-round limit“ oder „only one help note per round“.",
+   "warum": "Stimmt.",
+   "zahlen": [],
+   "regeln": [],
+   "offen": [],
+   "verlauf": [
+    {
+     "ref": "S5",
+     "text": "Mitleser observe_validate.py schreibt Runden nach ~/.cache/inkpartner/validate-metrics.jsonl",
+     "url": null
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "draw",
+   "label": "draw: Zeich → Pixel · pos(Element) → Schüler-Tinte, passend dazu Agenten-Tinte",
+   "row": 13,
+   "col": 0,
+   "status": "geaendert",
+   "punkt": "14",
+   "fakt": "draw ist seit 0bfccb4 ein eigenes Modul draw.py (auf main noch in plan.py). Es platziert die Zeichen an der Element-Box; gelesen wird nur Schülertinte, der Judge sieht Schüler- und Agententinte.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/draw.py",
+     "start": 17,
+     "end": 25,
+     "code": "def draw(actions: list[Action], elements: list[Element], strokes_on_page: list[dict], *,\n         width: int, height: int) -> list[dict]:\n    \"\"\"Turn accepted actions into strokes. Each stroke carries the key of its action, so the\n    verifier can later tell which action did or did not arrive.\"\"\"\n    by_id = {e.id: e for e in elements}\n    occ = layout.Occupancy(strokes_on_page, width, height)\n    out = []\n    for a in actions:\n        el = by_id[a.element]",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/draw.py#L17-L25"
+    },
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 111,
+     "end": 111,
+     "code": "    img = pagemod.render(strokes, authors=(\"user\", \"agent\"), background=background, crop=True)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L111-L111"
+    }
+   ],
+   "commits": [
+    {
+     "short": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "next": [
+    "strich"
+   ],
+   "stage": "zeichnen",
+   "was": "draw setzt jede angenommene Aktion in Striche um, an der Box des Elements, möglichst ohne fremde Tinte zu überdecken.",
+   "warum": "Stimmt, aber seit 0bfccb4 eigenes Modul draw.py (auf main noch in plan.py). Gelesen wird nur Schülertinte, der Judge sieht beides.",
+   "zahlen": [
+    "Notizhöhe 34–80 px",
+    "Refactor: 57 Tests grün, 40 scheitern am System-Python (S6)"
+   ],
+   "regeln": [
+    "R2",
+    "R17"
+   ],
+   "offen": [
+    "ownink"
+   ],
+   "verlauf": [
+    {
+     "ref": "S6",
+     "text": "draw aus plan.py nach draw.py gezogen, plan.draw bleibt Re-Export",
+     "url": null
+    },
+    {
+     "ref": "0bfccb4",
+     "text": "committet",
+     "commit": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "user",
+   "label": "USER  3+3=?",
+   "row": 14,
+   "col": 0,
+   "status": "stimmt-noch",
+   "punkt": "—",
+   "fakt": "Kein eigener Grillme-Punkt. Im Code gilt „= ?“ als Hilfe-Anfrage: Urteil help, Zeichen note, nie das Ergebnis.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/agent.py",
+     "start": 117,
+     "end": 120,
+     "code": "def asks_for_help(e: Element) -> bool:\n    \"\"\"A line with a question - '(3x+4y)^3 = ?' - is a request, not an answer to check.\"\"\"\n    from .elements import ASK\n    return bool(ASK.search(e.text or \"\"))",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/agent.py#L117-L120"
+    }
+   ],
+   "commits": [],
+   "next": [],
+   "stage": "zeichnen",
+   "was": "Schreibst du „3+3=?“, ist das eine Hilfe-Anfrage: Urteil help, Zeichen note – mit dem nächsten Schritt, nie dem Ergebnis.",
+   "warum": "Kein eigener Grillme-Punkt; belegt durch asks_for_help.",
+   "zahlen": [
+    "Hilfe-Notiz max. 140 Zeichen"
+   ],
+   "regeln": [
+    "R7"
+   ],
+   "offen": [
+    "ownink"
+   ],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "strich",
+   "label": "Draw → Strich-Dictionary",
+   "row": 14,
+   "col": 2,
+   "status": "geaendert",
+   "punkt": "14",
+   "fakt": "draw() gibt list[dict] zurück: Striche, jeder mit dem Key seiner Aktion, damit später geprüft werden kann, was ankam.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/draw.py",
+     "start": 1,
+     "end": 5,
+     "code": "\"\"\"Turn accepted actions into strokes. The rules live in plan.py; this module only places the ink.\n\nEach stroke carries the key of its action, so the verifier can later tell which action did or\ndid not arrive. Colour still comes from the verdict, never from the model.\n\"\"\"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/draw.py#L1-L5"
+    }
+   ],
+   "commits": [
+    {
+     "short": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "next": [
+    "send"
+   ],
+   "stage": "zeichnen",
+   "was": "Ergebnis von draw ist eine Liste von Strich-Dictionaries; jeder Strich trägt den Key seiner Aktion, damit verify später sagen kann, was ankam.",
+   "warum": "Stimmt; Modul neu in 0bfccb4.",
+   "zahlen": [],
+   "regeln": [
+    "R11"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "send",
+   "label": "Deliver → vipen → RM · SSH Tablet.send → schreibt",
+   "row": 15,
+   "col": 1,
+   "status": "geaendert",
+   "punkt": "15",
+   "fakt": "Per SSH an /dev/input. main: cat; watch/write-gap und claude/focused-planck-2ml7jl: dd bs=24 iflag=fullblock, weil cat 4096-Byte-Blöcke schreibt und 4096 kein Vielfaches von 24 Byte ist. stderr bleibt eine Pipe (29c7a55).",
+   "snippets": [
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 215,
+     "end": 222,
+     "code": "    def send(self, screen_strokes: list[dict]):\n        \"\"\"Pen events, screen pixels. One event per write.\n\n        `cat` reads 4096 bytes. An input_event is 24 bytes, and 4096 is not a multiple of 24, so\n        the kernel rejects the leftover (EINVAL) and the pen-up never arrives. Measured 21.10.:\n        170 events (4080 bytes) land, 171 are rejected. `dd bs=24 iflag=fullblock` writes only\n        whole events. Reports stay paced: one block at once made xochitl drop the stroke (24.10.).\n        \"\"\"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L215-L222"
+    },
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 231,
+     "end": 234,
+     "code": "            p = subprocess.Popen(\n                [\"ssh\", \"-o\", \"BatchMode=yes\", self.host,\n                 f\"dd bs=24 iflag=fullblock of=/dev/input/{shlex.quote(self.device)}\"],\n                stdin=subprocess.PIPE, stderr=subprocess.PIPE)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L231-L234"
+    }
+   ],
+   "commits": [
+    {
+     "short": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    },
+    {
+     "short": "37dd2e8",
+     "url": "https://github.com/smlfg/inkpartner/commit/37dd2e857d0303f42efd5d926a2f7aaa3b3265a8"
+    },
+    {
+     "short": "29c7a55",
+     "url": "https://github.com/smlfg/inkpartner/commit/29c7a558af4e187ae8b9266593860bc66afa0d80"
+    }
+   ],
+   "next": [
+    "nach"
+   ],
+   "stage": "schreiben",
+   "was": "Der virtuelle Stift: Striche werden zu Pen-Events (24 Byte je Event) und per SSH nach /dev/input auf dem Tablet geschrieben.",
+   "warum": "Weg geändert: cat schrieb 4096-Byte-Blöcke, 4096 ist kein Vielfaches von 24 → der Rest wurde verworfen, das Stift-hoch kam nie an. Jetzt dd bs=24 iflag=fullblock.",
+   "zahlen": [
+    "Messung 21.10. (Kommentar in watch.send): 170 Events (4080 Byte) landen, 171 werden abgelehnt",
+    "py-spy: send() < 1 % (S7)"
+   ],
+   "regeln": [
+    "R10",
+    "R-OPEN",
+    "R-VIEWPORT",
+    "R-RATE",
+    "R-COOLDOWN"
+   ],
+   "offen": [
+    "drift",
+    "black"
+   ],
+   "verlauf": [
+    {
+     "ref": "S1",
+     "text": "stderr von cat nach PIPE statt DEVNULL – Grund „Invalid argument“ wird sichtbar",
+     "commit": "29c7a55",
+     "url": "https://github.com/smlfg/inkpartner/commit/29c7a558af4e187ae8b9266593860bc66afa0d80"
+    },
+    {
+     "ref": "S4",
+     "text": "Ursache 24-Byte-Grenze gefunden, Fix dd bs=24",
+     "url": null
+    },
+    {
+     "ref": "37dd2e8",
+     "text": "derselbe Fix auf claude/focused-planck-2ml7jl",
+     "commit": "37dd2e8",
+     "url": "https://github.com/smlfg/inkpartner/commit/37dd2e857d0303f42efd5d926a2f7aaa3b3265a8"
+    },
+    {
+     "ref": "0bfccb4",
+     "text": "dd-Fix + Offscreen-Skip auf watch/write-gap",
+     "commit": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "docs": []
+  },
+  {
+   "id": "nach",
+   "label": "nach schreiben: Notiz-App · Native Device Editor",
+   "row": 16,
+   "col": 0,
+   "status": "unklar",
+   "punkt": "16",
+   "fakt": "Bezug nicht eindeutig. Der Dateiweg mit Neustart von xochitl existiert noch als Rückfall.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 282,
+     "end": 284,
+     "code": "        target = shlex.quote(XOCHITL + \"/\" + rel)\n        self.ssh(f\"systemctl stop xochitl && cat > {target}.inkpartner && mv {target}.inkpartner {target}\"\n                 f\" ; systemctl start xochitl\", data=data, timeout=60)",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L282-L284"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "cat"
+   ],
+   "stage": "schreiben",
+   "was": "Nach dem Schreiben übernimmt die Notiz-App (xochitl) die Striche. Als Rückfall gibt es den Dateiweg: xochitl stoppen, Datei anhängen, neu starten.",
+   "warum": "Unklar, was in der Notiz mit „Native Device Editor“ gemeint ist. Der Dateiweg ist durch R-RESTART stark eingeschränkt.",
+   "zahlen": [
+    "R-RESTART: 30 min Ruhe, höchstens 1× pro Stunde"
+   ],
+   "regeln": [
+    "R10",
+    "R-RESTART",
+    "R-PREFIX",
+    "R1"
+   ],
+   "offen": [],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "cat",
+   "label": "return None · cat (ließ .RM)",
+   "row": 17,
+   "col": 1,
+   "status": "stimmt-noch",
+   "punkt": "17",
+   "fakt": ".rm-Dateien werden per ssh cat gelesen.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 141,
+     "end": 142,
+     "code": "    def fetch(self, rel: str) -> bytes:\n        return self.ssh(f\"cat {shlex.quote(XOCHITL + '/' + rel)}\")",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L141-L142"
+    },
+    {
+     "file": "src/inkpartner/verify.py",
+     "start": 1,
+     "end": 7,
+     "code": "\"\"\"Did the ink arrive? Three answers, never two: confirmed, missing, unclear.\n\n\"Sent\" is not \"written\" (device test 2026-10-20: the pen path reported an error and the line was\nthere anyway; the reverse happens too). After every delivery the page is read back and each action\nis checked against the strokes that appeared since. \"unclear\" means: do not write it again yet -\nit may already be on the page, and a duplicate mark is worse than a late one.\n\"\"\"",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/verify.py#L1-L7"
+    }
+   ],
+   "commits": [],
+   "next": [
+    "fehler"
+   ],
+   "stage": "schreiben",
+   "was": "Die Seite wird per ssh cat zurückgelesen; verify vergleicht dann jede Aktion mit den neuen Strichen: confirmed, missing oder unclear.",
+   "warum": "Stimmt: .rm wird per ssh cat gelesen.",
+   "zahlen": [
+    "verify: confirmed ab 85 % Deckung, missing unter 15 %"
+   ],
+   "regeln": [
+    "R11",
+    "R13",
+    "R-FOREIGN"
+   ],
+   "offen": [
+    "ownink"
+   ],
+   "verlauf": [],
+   "docs": []
+  },
+  {
+   "id": "fehler",
+   "label": "Wenn schreiben fehlschlägt: watcher → element implodiert [?] Q",
+   "row": 18,
+   "col": 0,
+   "status": "unklar",
+   "punkt": "18",
+   "fakt": "Im Code: fehlende Striche gehen in pending und werden mit retry_pending erneut versucht; nach 2 Fehlschlägen in Folge pausiert der Stiftweg.",
+   "snippets": [
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 658,
+     "end": 663,
+     "code": "            if all(v == \"missing\" for v in states.values()):\n                self.pen_failures += 1\n                if self.pen_failures >= 2:\n                    self.pen_rest_until = now + self.pen_rest_s\n                    self.log(f\"  pen path failed {self.pen_failures}x in a row - resting it for \"\n                             f\"{self.pen_rest_s / 60:.0f} min\")",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L658-L663"
+    },
+    {
+     "file": "src/inkpartner/watch.py",
+     "start": 720,
+     "end": 727,
+     "code": "    def retry_pending(self, rel, st, now):\n        p = st.pending\n        current = self.tablet.fetch(rel)\n        if sha(current) != p[\"base_sha\"]:\n            self.log(f\"  {self.tablet.name(rel)}: page changed since - pending feedback dropped (stale)\")\n            st.pending = None\n            st.reviewed_sha = \"\"                          # look at the page again\n            return",
+     "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L720-L727"
+    }
+   ],
+   "commits": [],
+   "next": [],
+   "stage": "fehler",
+   "was": "Fehlt Tinte, kommt sie in pending und wird später erneut versucht – nur wenn sich die Seite nicht geändert hat. Nach 2 Fehlschlägen in Folge pausiert der Stiftweg.",
+   "warum": "Unklar, was „Element implodiert“ meint; im Code gibt es pending, retry_pending und die Stift-Pause.",
+   "zahlen": [
+    "2 Fehlschläge → Pause"
+   ],
+   "regeln": [
+    "R12",
+    "R13"
+   ],
+   "offen": [
+    "guards"
+   ],
+   "verlauf": [
+    {
+     "ref": "S2",
+     "text": "Ein neues Thumbnail gilt als neuer Viewport; Pending-Hash nach Probestrich neu gesetzt",
+     "url": null
+    },
+    {
+     "ref": "0bfccb4",
+     "text": "committet",
+     "commit": "0bfccb4",
+     "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037"
+    }
+   ],
+   "docs": []
+  }
+ ],
+ "stages": [
+  {
+   "id": "lesen",
+   "name": "Lesen"
+  },
+  {
+   "id": "verstehen",
+   "name": "Verstehen"
+  },
+  {
+   "id": "urteilen",
+   "name": "Urteilen"
+  },
+  {
+   "id": "pruefen",
+   "name": "Prüfen"
+  },
+  {
+   "id": "zeichnen",
+   "name": "Zeichnen"
+  },
+  {
+   "id": "schreiben",
+   "name": "Schreiben"
+  },
+  {
+   "id": "fehler",
+   "name": "Fehlerfall"
+  }
+ ],
+ "sessions": {
+  "S1": {
+   "id": "77114ae4",
+   "zeit": "24.10. 22:10–00:12",
+   "titel": "Stift-Fehler sichtbar machen, „erst erkennen“-Versuch"
+  },
+  "S2": {
+   "id": "79b8badf",
+   "zeit": "24.10. 22:32–00:20",
+   "titel": "Lese-Pipeline, Timeout, Viewport-Korrektur"
+  },
+  "S3": {
+   "id": "229b241d",
+   "zeit": "24.10. 22:25–23:47",
+   "titel": "Watcher-Start, 3 + 3 = 7"
+  },
+  "S4": {
+   "id": "8008a735",
+   "zeit": "24.10. 23:01–23:43",
+   "titel": "Stift-Zustellung (24-Byte-Grenze)"
+  },
+  "S5": {
+   "id": "9b291812",
+   "zeit": "24.10. 22:32–00:27",
+   "titel": "Schreib-Pipeline, Metriken, Guards (+ Subagent)"
+  },
+  "S6": {
+   "id": "6af3c263",
+   "zeit": "24.10. 23:27–23:45",
+   "titel": "Refactor draw → draw.py"
+  },
+  "S7": {
+   "id": "4e18d5fd",
+   "zeit": "24.10. 23:53–00:15",
+   "titel": "py-spy-Profil des Watchers"
+  },
+  "S8": {
+   "id": "9736fde5",
+   "zeit": "25.10. 00:10–00:14",
+   "titel": "Event-Tracer (hunter)"
+  }
+ },
+ "commits": [
+  {
+   "short": "29c7a55",
+   "url": "https://github.com/smlfg/inkpartner/commit/29c7a558af4e187ae8b9266593860bc66afa0d80",
+   "msg": "pen: keep cat's stderr when the inject pipe breaks",
+   "wo": "watch/write-gap (auch pen/cat-stderr)"
+  },
+  {
+   "short": "6aa80de",
+   "url": "https://github.com/smlfg/inkpartner/commit/6aa80decf6cd0faa2c14e985a780fa7651444997",
+   "msg": "docs: keep the read pipeline from a page file to elements",
+   "wo": "watch/write-gap (auch docs/read-pipeline)"
+  },
+  {
+   "short": "0bfccb4",
+   "url": "https://github.com/smlfg/inkpartner/commit/0bfccb439cf2d628fcf241d6caae3b4738015037",
+   "msg": "watch: wait 10s after a write and keep marks that still fit the screen",
+   "wo": "watch/write-gap, 25.10. 00:29"
+  },
+  {
+   "short": "37dd2e8",
+   "url": "https://github.com/smlfg/inkpartner/commit/37dd2e857d0303f42efd5d926a2f7aaa3b3265a8",
+   "msg": "dd bs=24 statt cat",
+   "wo": "claude/focused-planck-2ml7jl"
+  },
+  {
+   "short": "6fc0a84",
+   "url": "https://github.com/smlfg/inkpartner/commit/6fc0a84b6b7ed5f5fc5b5a04ca2b60f878958b19",
+   "msg": "Zahlenketten in jedem Fach prüfen",
+   "wo": "claude/focused-planck-2ml7jl"
+  },
+  {
+   "short": "a48470f",
+   "url": "https://github.com/smlfg/inkpartner/commit/a48470f72f8c6268f7d696ff8ac9e1cf19c7d88d",
+   "msg": "letzter Stand main (24.10. 19:14)",
+   "wo": "main"
+  },
+  {
+   "short": "9ba24a5",
+   "url": null,
+   "msg": "route: pick the prompt from one recognition, without a second image (+5 Tests)",
+   "wo": "nur lokal (try/recognize-then-prompt), nicht auf GitHub"
+  }
+ ],
+ "regeln": {
+  "R-PEN-NEAR": "Stift-Events nur, wenn der echte Stift seit ein paar Sekunden außer Reichweite ist. (guards.py) — misst laut S5 keinen Abstand, nur „Event auf event2 in den letzten 3 s“; seit 0bfccb4 per if False aus.",
+  "R-OPEN": "Stift-Events nur in die Seite, die gerade offen ist. (guards.py)",
+  "R-VIEWPORT": "Stift-Events nur in einem Viewport, für den die Kalibrierung gilt (nicht gezoomt). (guards.py)",
+  "R-FOREIGN": "Neue Striche in der Schülerebene, die weder erwartete Agententinte noch echter Stift sind → STOP. (guards.py)",
+  "R-PREFIX": "Eine Seitendatei darf nur wachsen; die Originalbytes bleiben Präfix. (guards.py)",
+  "R-RATE": "Höchstens ein paar Stift-Zustellungen pro Minute (pen_per_minute = 4). (guards.py)",
+  "R-COOLDOWN": "Nach einem fertigen Schreiben wartet das nächste 10 s (write_gap_s). Neu in 0bfccb4. (guards.py)",
+  "R-RESTART": "Neustart nur wenn erlaubt, nach 30 min ohne Änderung, höchstens einmal pro Stunde. (guards.py)",
+  "R1": "Deine Schrift wird nie gelöscht oder umgeschrieben.",
+  "R3": "Schwarz = du, grün = richtig, rot = falsch.",
+  "R4": "Grün darf auch „bis hierhin fehlerfrei“ heißen.",
+  "R5": "Unsicheres wird nie grün; Unleserliches bekommt eine Wellenlinie.",
+  "R6": "Der Agent kann sprechen, unterstreichen, abhaken und Text schreiben.",
+  "R7": "Nie vorrechnen, kleinste hilfreiche Hilfe.",
+  "R8": "Automatisch, ohne Auslöser; regelmäßig nachschauen, nur bei Bedarf reagieren.",
+  "R9": "Klein und inkrementell; Ziel 5–10 s, 20 s akzeptabel — höchstens 3–4 Zeichen pro Runde, Latenz laut Doku nicht gemessen.",
+  "R10": "Die Oberfläche darf nie stoppen oder neu starten.",
+  "R11": "Erfolg heißt: auf der geöffneten Seite sichtbar (verify.verify, drei Ergebnisse).",
+  "R12": "Fehler behebt der Agent selbst, er fragt dich nicht.",
+  "R13": "Bei „unklar“ nicht doppelt schreiben — erst zurücklesen.",
+  "R17": "Der Agent reagiert nicht auf seine eigene Tinte.",
+  "R18": "Gilt für alle Fächer (Profile in profiles.py)."
+ },
+ "regeln_quelle": {
+  "R-": "src/inkpartner/guards.py (Docstring)",
+  "R": "docs/INTERAKTIONSREGELN.md"
+ },
+ "docs": {
+  "INTERAKTIONSREGELN.md": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/docs/INTERAKTIONSREGELN.md",
+  "LESEN.md": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/docs/LESEN.md"
+ },
+ "offen": [
+  {
+   "id": "ownink",
+   "titel": "Eigene Tinte wird nicht wiedererkannt",
+   "text": "Die eigene Hilfe-Notiz wird als Schülerschrift gelesen: Versatz 1615 px verfehlt die 10-px-Schwelle, und nur die letzten 100 erwarteten Striche werden gehalten (die Notiz hatte 107). Folge: Wellenlinien unter dem eigenen Text.",
+   "quelle": "S5",
+   "snippet": {
+    "file": "src/inkpartner/watch.py",
+    "start": 510,
+    "end": 516,
+    "code": "            if st.expected:                             # marks sent without read-back, now saved\n                for x in strokes:\n                    if x.get(\"author\") == \"user\" and stroke_sig(x) not in st.own_sigs and \\\n                            verify.coverage({\"points\": x[\"points\"]}, st.expected, tol=10) >= 0.8:\n                        st.own_sigs.add(stroke_sig(x))\n            if st.own_sigs:                             # the pen path's marks are not the student's writing\n                strokes = [dict(x, author=\"agent\") if stroke_sig(x) in st.own_sigs else x for x in strokes]",
+    "url": "https://github.com/smlfg/inkpartner/blob/0bfccb439cf2d628fcf241d6caae3b4738015037/src/inkpartner/watch.py#L510-L516"
+   }
+  },
+  {
+   "id": "black",
+   "titel": "Kreise bleiben schwarz statt rot",
+   "text": "penstream sendet nur Position und Druck; das Tablet zeichnet mit dem gewählten (schwarzen) Stift. Eine Änderung dafür gibt es nicht.",
+   "quelle": "S5"
+  },
+  {
+   "id": "guards",
+   "titel": "R-VIEWPORT und R-RATE blockieren",
+   "text": "Seite 7: Haken scheiterten an R-VIEWPORT (Passung 0,00), der Kreis für 4 × 3 = 10 an R-RATE.",
+   "quelle": "S5 / letzter Logstand"
+  },
+  {
+   "id": "pennear",
+   "titel": "R-PEN-NEAR nur ausgeschaltet",
+   "text": "Per if False abgeschaltet (0bfccb4), nicht repariert. Braucht eine echte Messung oder einen Log-Wert für idle_s.",
+   "quelle": "S5, 0bfccb4"
+  },
+  {
+   "id": "debug",
+   "titel": "Debug-Blöcke im Commit",
+   "text": "0bfccb4 enthält 16 Blöcke „#region agent log“ (13 in watch.py, 3 in penpath.py). Vor einem Merge nach main entfernen.",
+   "quelle": "git grep auf watch/write-gap"
+  },
+  {
+   "id": "drift",
+   "titel": "main und Branches laufen auseinander",
+   "text": "watch/write-gap liegt 3 Commits vor main (29c7a55, 6aa80de, 0bfccb4). Der dd-Fix existiert doppelt (0bfccb4 und 37dd2e8 auf claude/focused-planck-2ml7jl); main nutzt noch cat. Erst zusammenführen, dann weiter.",
+   "quelle": "git log"
+  },
+  {
+   "id": "blocking",
+   "titel": "Lange Modellaufrufe blockieren den Scan",
+   "text": "Ein hängender Ollama-Aufruf (bis 600 s) blockiert tick und damit den Seitenscan. 45-s-Timeout steht nur auf watch/write-gap.",
+   "quelle": "S5, S2"
+  },
+  {
+   "id": "push",
+   "titel": "9ba24a5 nicht gepusht",
+   "text": "„Erst erkennen, dann Prompt“ (route.py, 5 Tests) liegt nur lokal auf try/recognize-then-prompt; die Anbindung an review.run ist nicht committet.",
+   "quelle": "S1"
+  },
+  {
+   "id": "hunter",
+   "titel": "Tracer hunter nicht installiert",
+   "text": "Entscheidung für hunter (statt viztracer/snoop) steht, Installation fehlt die Freigabe.",
+   "quelle": "S8"
+  }
+ ],
+ "stats": {
+  "sessions": 8,
+  "subagent": 1,
+  "commits_auf_github": 6,
+  "commits_lokal": 1,
+  "offene_punkte": 9,
+  "grillme_punkte": 18,
+  "status_count": {
+   "stimmt-noch": 11,
+   "teilweise": 4,
+   "anders": 2,
+   "geaendert": 5,
+   "unklar": 2
+  }
+ }
+}

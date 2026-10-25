@@ -1,0 +1,51 @@
+{
+  "title": "todo-cli — Demo-Abgleich",
+  "brand": "todo-cli",
+  "eyebrow": "Demo · fiktives Beispiel",
+  "headline": "Die Skizze, gegen den Code gehalten",
+  "lede_html": "Fiktives Mini-Beispiel für <strong>papier-abgleich</strong>: sechs Skizzen-Punkte, alle vier Beleg-Marker.",
+  "subtitle_html": "Demo-Daten, keine echten Commits.",
+  "note_ref": "Demo-Skizze",
+  "footer": "Quelle: examples/minimal/flow.json (fiktiv)",
+  "code_ref": "main",
+  "callout_offen_id": "leer",
+  "example_node": "parse",
+  "points": [
+    [
+      "1",
+      "Eingabe: Datei lesen",
+      "stimmt noch",
+      "read_lines()"
+    ],
+    [
+      "2",
+      "parse() → Liste",
+      "geändert",
+      "Task-Objekte"
+    ],
+    [
+      "3",
+      "gültig?",
+      "teilweise",
+      "leere Zeilen still verworfen"
+    ],
+    [
+      "4",
+      "ja → sortieren",
+      "stimmt noch",
+      ""
+    ],
+    [
+      "5",
+      "nein → Fehler",
+      "unklar",
+      "kein Fehlerpfad"
+    ],
+    [
+      "6",
+      "Ausgabe: drucken",
+      "stimmt noch",
+      "print"
+    ]
+  ]
+}

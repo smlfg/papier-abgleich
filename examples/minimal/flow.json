@@ -1,0 +1,194 @@
+{
+  "commit": "0000000",
+  "branch": "main",
+  "stages": [
+    {
+      "id": "ein",
+      "name": "Eingabe"
+    },
+    {
+      "id": "verarb",
+      "name": "Verarbeitung"
+    },
+    {
+      "id": "aus",
+      "name": "Ausgabe"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "lesen",
+      "label": "Eingabe: Datei lesen",
+      "stage": "ein",
+      "row": 0,
+      "col": 1,
+      "status": "stimmt-noch",
+      "punkt": "1",
+      "was": "Liest todo.txt zeilenweise.",
+      "warum": "Stimmt: read_lines() öffnet die Datei und liefert Zeilen.",
+      "zahlen": [
+        "1 Datei"
+      ],
+      "next": [
+        "parse"
+      ],
+      "belege": [
+        {
+          "quote": "def read_lines(path):",
+          "marker": "BELEGT",
+          "quelle": "todo/io.py:3",
+          "url": null
+        }
+      ]
+    },
+    {
+      "id": "parse",
+      "label": "parse() → Liste",
+      "stage": "verarb",
+      "row": 0,
+      "col": 1,
+      "status": "geaendert",
+      "punkt": "2",
+      "was": "Zerlegt Zeilen in Aufgaben.",
+      "warum": "Geändert: parse() liefert inzwischen Task-Objekte statt Strings.",
+      "next": [
+        "raute"
+      ],
+      "belege": [
+        {
+          "quote": "return [Task.from_line(l) for l in lines]",
+          "marker": "BELEGT",
+          "quelle": "todo/parse.py:12",
+          "url": null
+        },
+        {
+          "quote": "Mit 10 000 Zeilen getestet: 0,4 s",
+          "marker": "OFFLINE",
+          "quelle": "tests/test_perf.py",
+          "url": null
+        }
+      ],
+      "snippets": [
+        {
+          "file": "todo/parse.py",
+          "start": 10,
+          "end": 12,
+          "code": "def parse(lines):\n    lines = [l for l in lines if l.strip()]\n    return [Task.from_line(l) for l in lines]",
+          "url": null
+        }
+      ]
+    },
+    {
+      "id": "raute",
+      "label": "gültig?",
+      "shape": "raute",
+      "stage": "verarb",
+      "row": 1,
+      "col": 1,
+      "status": "teilweise",
+      "punkt": "3",
+      "was": "Prüft jede Aufgabe.",
+      "warum": "Teilweise: leere Zeilen werden still verworfen, nicht als Fehler gemeldet.",
+      "next": [
+        "sort",
+        "fehler"
+      ],
+      "offen": [
+        "leer"
+      ],
+      "belege": [
+        {
+          "quote": "lines = [l for l in lines if l.strip()]",
+          "marker": "BELEGT",
+          "quelle": "todo/parse.py:11",
+          "url": null
+        }
+      ]
+    },
+    {
+      "id": "sort",
+      "label": "ja → sortieren",
+      "stage": "verarb",
+      "row": 2,
+      "col": 0,
+      "status": "stimmt-noch",
+      "punkt": "4",
+      "was": "Sortiert nach Fälligkeit.",
+      "warum": "Stimmt.",
+      "next": [
+        "druck"
+      ],
+      "belege": [
+        {
+          "quote": "Auf dem Laptop sortiert ausgegeben",
+          "marker": "GERAET",
+          "quelle": "Session 2, 14:10",
+          "url": null
+        }
+      ]
+    },
+    {
+      "id": "fehler",
+      "label": "nein → Fehler",
+      "stage": "verarb",
+      "row": 2,
+      "col": 2,
+      "status": "unklar",
+      "punkt": "5",
+      "was": "Meldet ungültige Aufgaben.",
+      "warum": "Unklar: kein Fehlerpfad im Code gefunden; Mensch fragen.",
+      "belege": [
+        {
+          "quote": "Wahrscheinlich in einem älteren Branch",
+          "marker": "HYPOTHESE",
+          "quelle": "—",
+          "url": null
+        }
+      ]
+    },
+    {
+      "id": "druck",
+      "label": "Ausgabe: drucken",
+      "stage": "aus",
+      "row": 0,
+      "col": 1,
+      "status": "stimmt-noch",
+      "punkt": "6",
+      "was": "Druckt die Liste ins Terminal.",
+      "warum": "Stimmt.",
+      "belege": [
+        {
+          "quote": "print(format_table(tasks))",
+          "marker": "BELEGT",
+          "quelle": "todo/cli.py:20",
+          "url": null
+        }
+      ]
+    }
+  ],
+  "sessions": {
+    "S1": {
+      "id": "demo-1",
+      "zeit": "01.01. 10:00–11:00",
+      "titel": "Parser auf Task-Objekte umgestellt"
+    }
+  },
+  "commits": [
+    {
+      "short": "0000000",
+      "url": null,
+      "msg": "Demo-Commit (fiktiv)",
+      "wo": "nur lokal"
+    }
+  ],
+  "regeln": {},
+  "docs": {},
+  "offen": [
+    {
+      "id": "leer",
+      "titel": "Leere Zeilen",
+      "text": "Sollen leere Zeilen als Fehler gemeldet werden?",
+      "quelle": "S1"
+    }
+  ]
+}

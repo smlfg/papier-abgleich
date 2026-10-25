@@ -1,0 +1,21 @@
+# Build-Ausgaben (die Beispiele unter examples/*/site/ werden bewusst eingecheckt)
+/site/
+/out/
+*.tmp.html
+.verify_*.html
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Private Quellen nie einchecken
+*.rm
+*.rmdoc
+private/
