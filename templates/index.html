@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{ui_lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,8 +11,8 @@
   <header class="topbar">
     <a class="brand" href="#">{{brand}} <span>{{brand_sub}}</span></a>
     <div class="top-actions">
-      <button class="button" id="open-original" type="button" aria-haspopup="dialog">Original-Notiz</button>
-      <button class="icon-button" id="theme-toggle" type="button" aria-label="Dunkelmodus umschalten" aria-pressed="false"><span aria-hidden="true">◐</span></button>
+{{{ui_lang_switch_line}}}      <button class="button" id="open-original" type="button" aria-haspopup="dialog">{{ui_original_note}}</button>
+      <button class="icon-button" id="theme-toggle" type="button" aria-label="{{ui_dark_toggle}}" aria-pressed="false"><span aria-hidden="true">◐</span></button>
     </div>
   </header>
 
@@ -25,20 +25,20 @@
         <p class="subtitle">{{{subtitle_html}}}</p>
       </section>
 
-      <section class="metrics" aria-label="Kennzahlen">
+      <section class="metrics" aria-label="{{ui_metrics}}">
         <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
         <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
         <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
         <article class="metric"><span class="metric-number"></span><span></span><small></small></article>
         <article class="metric metric-wide">
-          <span>Status-Verteilung</span>
-          <div id="status-bar" class="status-bar" role="img" aria-label="Status-Verteilung der 24 Knoten"></div>
+          <span>{{ui_status_dist}}</span>
+          <div id="status-bar" class="status-bar" role="img" aria-label="{{ui_status_dist_aria}}"></div>
           <div id="status-legend" class="status-legend"></div>
         </article>
       </section>
 
       <section class="verdict-sec" aria-labelledby="verdict-title">
-        <div class="sec-head"><h2 id="verdict-title">Das Urteil</h2><span class="sec-n">01</span></div>
+        <div class="sec-head"><h2 id="verdict-title">{{ui_verdict}}</h2><span class="sec-n">01</span></div>
         <div class="verdict-grid">
           <article class="verdict-card" id="verdict-ok"></article>
           <article class="verdict-card" id="verdict-diff"></article>
@@ -46,21 +46,21 @@
         <div class="callout" id="callout"></div>
       </section>
 
-      <div class="sec-head flow-head"><h2>Die Pipeline nach Skizze</h2><span class="sec-n">02</span></div>
-      <p class="sec-sub">{{stage_count_word}} Stufen in der Reihenfolge der Notiz. Knoten anklicken (oder ←/→, 1/2/3 für Tabs, Esc schließt, / sucht). Links lassen sich teilen: <code>#{{example_node}}/code</code>.</p>
-      <section class="explorer" aria-label="Diagramm und Werkzeuge">
-        <div class="toolbar" role="toolbar" aria-label="Diagramm-Werkzeuge">
-          <div class="filter-group" id="status-filters" aria-label="Nach Status filtern"></div>
-          <label class="search-box" for="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Knoten, Text oder Code suchen …" autocomplete="off"></label>
+      <div class="sec-head flow-head"><h2>{{ui_pipeline}}</h2><span class="sec-n">02</span></div>
+      <p class="sec-sub">{{{ui_flow_sub}}}</p>
+      <section class="explorer" aria-label="{{ui_explorer}}">
+        <div class="toolbar" role="toolbar" aria-label="{{ui_toolbar}}">
+          <div class="filter-group" id="status-filters" aria-label="{{ui_filter}}"></div>
+          <label class="search-box" for="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="{{ui_search}}" autocomplete="off"></label>
         </div>
-        <nav class="stage-nav" id="stage-nav" aria-label="Stufen-Navigation"></nav>
+        <nav class="stage-nav" id="stage-nav" aria-label="{{ui_stage_nav}}"></nav>
         <div class="flow-frame">
           <div class="flow-scroll" id="flow-scroll">
             <div class="flow-grid" id="flow-grid">
               <svg id="arrows" aria-hidden="true"></svg>
             </div>
           </div>
-          <aside class="panel" id="panel" aria-label="Knotendetails" aria-hidden="true">
+          <aside class="panel" id="panel" aria-label="{{ui_node_details}}" aria-hidden="true">
             <header class="panel-header">
               <div class="panel-title-wrap">
                 <p class="panel-eyebrow" id="panel-eyebrow"></p>
@@ -68,15 +68,15 @@
                 <div class="panel-meta" id="panel-meta"></div>
               </div>
               <div class="panel-nav">
-                <button class="icon-button" id="prev-node" type="button" aria-label="Vorheriger Knoten">←</button>
-                <button class="icon-button" id="next-node" type="button" aria-label="Nächster Knoten">→</button>
-                <button class="icon-button" id="close-panel" type="button" aria-label="Panel schließen">×</button>
+                <button class="icon-button" id="prev-node" type="button" aria-label="{{ui_prev}}">←</button>
+                <button class="icon-button" id="next-node" type="button" aria-label="{{ui_next}}">→</button>
+                <button class="icon-button" id="close-panel" type="button" aria-label="{{ui_close_panel}}">×</button>
               </div>
             </header>
-            <div class="tabs" role="tablist" aria-label="Knotendetails">
-              <button id="tab-fakt" type="button" role="tab" aria-controls="tabpanel-fakt" aria-selected="true">Fakt</button>
-              <button id="tab-code" type="button" role="tab" aria-controls="tabpanel-code" aria-selected="false">Code</button>
-              <button id="tab-verlauf" type="button" role="tab" aria-controls="tabpanel-verlauf" aria-selected="false">Verlauf</button>
+            <div class="tabs" role="tablist" aria-label="{{ui_node_details}}">
+              <button id="tab-fakt" type="button" role="tab" aria-controls="tabpanel-fakt" aria-selected="true">{{ui_tab_fakt}}</button>
+              <button id="tab-code" type="button" role="tab" aria-controls="tabpanel-code" aria-selected="false">{{ui_tab_code}}</button>
+              <button id="tab-verlauf" type="button" role="tab" aria-controls="tabpanel-verlauf" aria-selected="false">{{ui_tab_verlauf}}</button>
             </div>
             <div class="panel-body" id="panel-body"></div>
           </aside>
@@ -84,35 +84,35 @@
       </section>
 
       <section class="open-section" id="offen">
-        <div class="section-heading"><div class="sec-head"><h2>Was ist offen</h2><span class="sec-n">03</span></div><span id="open-count" class="count-pill"></span></div>
+        <div class="section-heading"><div class="sec-head"><h2>{{ui_open}}</h2><span class="sec-n">03</span></div><span id="open-count" class="count-pill"></span></div>
         <div class="open-grid" id="open-grid"></div>
       </section>
 
-      <section class="archive" aria-label="Vertiefende Materialien">
+      <section class="archive" aria-label="{{ui_archive}}">
         <details id="commits-details">
-          <summary><span>Commits</span><small>{{commit_count}} Einträge</small></summary>
-          <div class="table-wrap"><table><thead><tr><th>Kürzel</th><th>Nachricht</th><th>Ort</th></tr></thead><tbody id="commits-body"></tbody></table></div>
+          <summary><span>{{ui_commits}}</span><small>{{commit_count}} {{ui_entries}}</small></summary>
+          <div class="table-wrap"><table><thead><tr><th>{{ui_th_short}}</th><th>{{ui_th_msg}}</th><th>{{ui_th_where}}</th></tr></thead><tbody id="commits-body"></tbody></table></div>
         </details>
         <details id="sessions-details">
-          <summary><span>Sessions</span><small>{{session_count}} Einträge</small></summary>
-          <div class="table-wrap"><table><thead><tr><th>Session</th><th>Zeit</th><th>Titel</th></tr></thead><tbody id="sessions-body"></tbody></table></div>
+          <summary><span>{{ui_sessions}}</span><small>{{session_count}} {{ui_entries}}</small></summary>
+          <div class="table-wrap"><table><thead><tr><th>{{ui_th_session}}</th><th>{{ui_th_time}}</th><th>{{ui_th_title}}</th></tr></thead><tbody id="sessions-body"></tbody></table></div>
         </details>
         <details id="rules-details">
-          <summary><span>Regeln</span><small id="rules-count"></small></summary>
+          <summary><span>{{ui_rules}}</span><small id="rules-count"></small></summary>
           <div class="rule-list" id="rules-body"></div>
         </details>
         <details id="grill-details">
-          <summary><span>{{point_count}} {{points_label}}</span><small>wörtliche Abschrift</small></summary>
-          <div class="table-wrap"><table class="grill-table"><thead><tr><th>Nr.</th><th>Notiz</th><th>Status</th><th>Beleg</th></tr></thead><tbody id="grill-body"></tbody></table></div>
+          <summary><span>{{point_count}} {{points_label}}</span><small>{{ui_verbatim}}</small></summary>
+          <div class="table-wrap"><table class="grill-table"><thead><tr><th>{{ui_th_no}}</th><th>{{ui_th_note}}</th><th>{{ui_th_status}}</th><th>{{ui_th_evidence}}</th></tr></thead><tbody id="grill-body"></tbody></table></div>
         </details>
       </section>
       <footer>{{footer}}</footer>
     </main>
   </div>
 
-  <div class="original-overlay" id="original-overlay" role="dialog" aria-modal="true" aria-label="Original-Notiz" aria-hidden="true">
-    <div class="original-toolbar"><span>Original-Notiz · {{note_ref}}</span><button class="icon-button" id="original-close" type="button" aria-label="Original-Notiz schließen">×</button></div>
-    <img src="{{image_src}}" alt="Original-Notiz {{note_ref}}">
+  <div class="original-overlay" id="original-overlay" role="dialog" aria-modal="true" aria-label="{{ui_original_note}}" aria-hidden="true">
+    <div class="original-toolbar"><span>{{ui_original_note}} · {{note_ref}}</span><button class="icon-button" id="original-close" type="button" aria-label="{{ui_original_close}}">×</button></div>
+    <img src="{{image_src}}" alt="{{ui_original_note}} {{note_ref}}">
   </div>
 
   <script type="application/json" id="flow">{{{FLOW_JSON}}}</script>

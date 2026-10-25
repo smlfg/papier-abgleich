@@ -4,20 +4,60 @@
   const data = JSON.parse(document.getElementById("flow").textContent);
   const meta = JSON.parse(document.getElementById("meta").textContent);
   const grillRows = JSON.parse(document.getElementById("grill-table").textContent);
-  const pointLabel = meta.point_label || "Skizzen-Punkt";
-  const markerNames = { BELEGT: "belegt", GERAET: "am Gerät", OFFLINE: "offline", HYPOTHESE: "Hypothese" };
+  // Feste Texte je Sprache; meta.lang kommt aus build.py --lang (Standard de).
+  const I18N = {
+    de: {
+      point: "Punkt", pointLabel: "Skizzen-Punkt", pointsLabel: "Skizzen-Punkte",
+      markers: { BELEGT: "belegt", GERAET: "am Gerät", OFFLINE: "offline", HYPOTHESE: "Hypothese" },
+      status: { "stimmt-noch": "stimmt noch", "geaendert": "geändert", "anders": "anders", "teilweise": "teilweise", "unklar": "unklar" },
+      tabs: { fakt: "Fakt", code: "Code", verlauf: "Verlauf" },
+      lightToggle: "Hellmodus umschalten", darkToggle: "Dunkelmodus umschalten",
+      metricLabels: ["Sessions", "Commits", "offene Punkte"],
+      metricSubs: ["ausgewertet", "auf GitHub + lokal", "noch zu klären", "gegen den Code geprüft"],
+      subagent: (n) => `+${n} Subagent`, nodes: (n) => `${n} Knoten`,
+      source: "Quelle", what: "Was", why: "Warum / Status", evidence: "Belege", numbers: "Zahlen", rules: "Regeln",
+      openPoints: "Offene Punkte", snippets: "Codeausschnitte", noSnippet: "Kein Snippet hinterlegt.",
+      openLink: "Link öffnen", noHistory: "Keine Verlaufseinträge.", localOnly: "nur lokal, nicht auf GitHub",
+      document: "Dokument", history: "Verlauf", commits: "Commits", documents: "Dokumente", stage: "Stufe",
+      sketchOrig: "Skizze im Original",
+      points: (n) => `${n} Punkte`, noNode: "kein Knoten zugeordnet", rulesCount: (n) => `${n} Regeln`,
+      verdictOkTitle: "Was die Skizze noch trifft",
+      verdictOk: (ok, total, ref, part) => `${ok} von ${total} Knoten stimmen mit dem Code auf ${ref} überein, ${part} teilweise.`,
+      codeRefFallback: "dem Code-Stand",
+      verdictDiffTitle: "Wo der Code inzwischen anders ist",
+      verdictDiff: (ch, diff, unc) => `${ch} geändert, ${diff} anders gelöst, ${unc} unklar.`
+    },
+    en: {
+      point: "Point", pointLabel: "Sketch point", pointsLabel: "Sketch points",
+      markers: { BELEGT: "verified in code", GERAET: "seen on device", OFFLINE: "offline only", HYPOTHESE: "hypothesis" },
+      status: { "stimmt-noch": "still true", "geaendert": "changed", "anders": "different", "teilweise": "partial", "unklar": "unclear" },
+      tabs: { fakt: "Fact", code: "Code", verlauf: "History" },
+      lightToggle: "Toggle light mode", darkToggle: "Toggle dark mode",
+      metricLabels: ["Sessions", "Commits", "open points"],
+      metricSubs: ["analysed", "on GitHub + local", "still to resolve", "checked against the code"],
+      subagent: (n) => `+${n} subagent`, nodes: (n) => `${n} ${n === 1 ? "node" : "nodes"}`,
+      source: "Source", what: "What", why: "Why / status", evidence: "Evidence", numbers: "Numbers", rules: "Rules",
+      openPoints: "Open points", snippets: "Code excerpts", noSnippet: "No snippet attached.",
+      openLink: "Open link", noHistory: "No history entries.", localOnly: "local only, not on GitHub",
+      document: "Document", history: "History", commits: "Commits", documents: "Documents", stage: "Stage",
+      sketchOrig: "Original sketch label",
+      points: (n) => `${n} ${n === 1 ? "point" : "points"}`, noNode: "no node assigned", rulesCount: (n) => `${n} rules`,
+      verdictOkTitle: "Where the sketch still holds",
+      verdictOk: (ok, total, ref, part) => `${ok} of ${total} nodes match the code on ${ref}, ${part} partially.`,
+      codeRefFallback: "the pinned commit",
+      verdictDiffTitle: "Where the code has moved on",
+      verdictDiff: (ch, diff, unc) => `${ch} changed, ${diff} work differently, ${unc} unclear.`
+    }
+  };
+  const T = I18N[meta.lang] || I18N.de;
+  const pointLabel = meta.point_label || T.pointLabel;
+  const markerNames = T.markers;
   data.nodes.forEach((node) => ["zahlen", "regeln", "offen", "verlauf", "snippets", "commits", "docs", "next", "belege"].forEach((key) => { if (!Array.isArray(node[key])) node[key] = []; }));
   data.offen = data.offen || []; data.commits = data.commits || []; data.sessions = data.sessions || {}; data.regeln = data.regeln || {};
   const byId = new Map(data.nodes.map((node) => [node.id, node]));
   const openById = new Map(data.offen.map((item) => [item.id, item]));
   const stageIndex = new Map(data.stages.map((stage, index) => [stage.id, index]));
-  const statusNames = {
-    "stimmt-noch": "stimmt noch",
-    "geaendert": "geändert",
-    "anders": "anders",
-    "teilweise": "teilweise",
-    "unklar": "unklar"
-  };
+  const statusNames = T.status;
   const statusColors = {
     "stimmt-noch": "var(--ok)",
     "geaendert": "var(--changed)",
@@ -26,7 +66,7 @@
     "unklar": "var(--unclear)"
   };
   const statusOrder = ["stimmt-noch", "geaendert", "anders", "teilweise", "unklar"];
-  const tabNames = { fakt: "Fakt", code: "Code", verlauf: "Verlauf" };
+  const tabNames = T.tabs;
   const query = new URLSearchParams(location.search);
   const requestedStatus = query.get("status");
   const requestedQuery = query.get("q") || "";
@@ -61,7 +101,7 @@
     const next = theme === "dark" ? "dark" : "light";
     document.documentElement.dataset.theme = next;
     themeToggle.setAttribute("aria-pressed", String(next === "dark"));
-    themeToggle.setAttribute("aria-label", next === "dark" ? "Hellmodus umschalten" : "Dunkelmodus umschalten");
+    themeToggle.setAttribute("aria-label", next === "dark" ? T.lightToggle : T.darkToggle);
     if (persist) localStorage.setItem(meta.theme_key || "papier-abgleich-theme", next);
     requestAnimationFrame(drawArrows);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(drawArrows));
@@ -76,8 +116,8 @@
     const stats = data.stats;
     const metrics = document.querySelector(".metrics");
     const values = [stats.sessions, `${stats.commits_auf_github} + ${stats.commits_lokal}`, stats.offene_punkte, stats.skizzen_punkte ?? stats.grillme_punkte];
-    const labels = ["Sessions", "Commits", "offene Punkte", meta.points_label || "Skizzen-Punkte"];
-    const subs = [stats.subagent ? `+${stats.subagent} Subagent` : "ausgewertet", "auf GitHub + lokal", "noch zu klären", "gegen den Code geprüft"];
+    const labels = [...T.metricLabels, meta.points_label || T.pointsLabel];
+    const subs = [stats.subagent ? T.subagent(stats.subagent) : T.metricSubs[0], ...T.metricSubs.slice(1)];
     [...metrics.querySelectorAll(".metric:not(.metric-wide)")].forEach((card, index) => {
       card.querySelector(".metric-number").textContent = values[index];
       card.querySelector("span:not(.metric-number)").textContent = labels[index];
@@ -172,7 +212,7 @@
       head.className = "lane-head";
       head.style.gridColumn = "1";
       head.style.gridRow = rowSpan;
-      head.innerHTML = `<span class="lane-num">${String(lane.index + 1).padStart(2, "0")}</span><span class="lane-name">${escapeHtml(stage.name)}</span><span class="lane-count">${lane.count} ${lane.count === 1 ? "Knoten" : "Knoten"}</span>`;
+      head.innerHTML = `<span class="lane-num">${String(lane.index + 1).padStart(2, "0")}</span><span class="lane-name">${escapeHtml(stage.name)}</span><span class="lane-count">${T.nodes(lane.count)}</span>`;
       grid.appendChild(head);
     });
   }
@@ -191,7 +231,7 @@
       <span class="node-status" aria-hidden="true"></span>
       <span class="node-label">${escapeHtml(node.label)}</span>
       <span class="node-was">${escapeHtml(node.was)}</span>
-      <span class="node-point">Punkt ${escapeHtml(node.punkt)} · ${escapeHtml(statusNames[node.status])}</span>
+      <span class="node-point">${T.point} ${escapeHtml(node.punkt)} · ${escapeHtml(statusNames[node.status])}</span>
     `;
     if (node.shape === "raute" || node.id === "raute") button.classList.add("node-diamond");
     if (node.shape === "notiz" || node.id === "user") button.classList.add("node-user");
@@ -246,7 +286,7 @@
     const text = data.regeln[code];
     if (!text) return "";
     const source = code.startsWith("R-") ? data.regeln_quelle["R-"] : data.regeln_quelle["R"];
-    return `<article class="rule-item"><strong>${escapeHtml(code)}</strong><p>${escapeHtml(text)}</p><span class="rule-source">Quelle: ${escapeHtml(source)}</span></article>`;
+    return `<article class="rule-item"><strong>${escapeHtml(code)}</strong><p>${escapeHtml(text)}</p><span class="rule-source">${T.source}: ${escapeHtml(source)}</span></article>`;
   }
 
   function belegMarkup(beleg) {
@@ -261,17 +301,18 @@
       return item ? `<button class="open-link" type="button" data-open-id="${escapeHtml(id)}"><span>${escapeHtml(item.titel)}</span><span>${escapeHtml(item.quelle)}</span></button>` : "";
     }).join("");
     return `
-      <section class="panel-section"><h3>Was</h3><p class="was">${escapeHtml(node.was)}</p></section>
-      <section class="panel-section"><h3>Warum / Status</h3><p class="why">${escapeHtml(node.warum)}</p></section>
-      ${node.belege.length ? `<section class="panel-section"><h3>Belege</h3>${node.belege.map(belegMarkup).join("")}</section>` : ""}
-      ${node.zahlen.length ? `<section class="panel-section"><h3>Zahlen</h3><div class="chips">${node.zahlen.map((item) => `<span class="chip">${escapeHtml(item)}</span>`).join("")}</div></section>` : ""}
-      ${node.regeln.length ? `<section class="panel-section"><h3>Regeln</h3>${node.regeln.map(ruleMarkup).join("")}</section>` : ""}
-      ${node.offen.length ? `<section class="panel-section"><h3>Offene Punkte</h3>${openLinks}</section>` : ""}
+      <section class="panel-section"><h3>${T.what}</h3><p class="was">${escapeHtml(node.was)}</p></section>
+      ${node.label_orig ? `<section class="panel-section"><h3>${T.sketchOrig}</h3><p class="muted" lang="de">${escapeHtml(node.label_orig)}</p></section>` : ""}
+      <section class="panel-section"><h3>${T.why}</h3><p class="why">${escapeHtml(node.warum)}</p></section>
+      ${node.belege.length ? `<section class="panel-section"><h3>${T.evidence}</h3>${node.belege.map(belegMarkup).join("")}</section>` : ""}
+      ${node.zahlen.length ? `<section class="panel-section"><h3>${T.numbers}</h3><div class="chips">${node.zahlen.map((item) => `<span class="chip">${escapeHtml(item)}</span>`).join("")}</div></section>` : ""}
+      ${node.regeln.length ? `<section class="panel-section"><h3>${T.rules}</h3>${node.regeln.map(ruleMarkup).join("")}</section>` : ""}
+      ${node.offen.length ? `<section class="panel-section"><h3>${T.openPoints}</h3>${openLinks}</section>` : ""}
     `;
   }
 
   function renderCode(node) {
-    return `<section class="panel-section"><h3>Codeausschnitte</h3>${node.snippets.map(snippetMarkup).join("") || "<p>Kein Snippet hinterlegt.</p>"}</section>`;
+    return `<section class="panel-section"><h3>${T.snippets}</h3>${node.snippets.map(snippetMarkup).join("") || `<p>${T.noSnippet}</p>`}</section>`;
   }
 
   function historyEntry(entry) {
@@ -283,23 +324,23 @@
       const url = entry.url || commitUrl(entry.ref);
       meta = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entry.ref)}</a>` : escapeHtml(entry.ref);
     }
-    const link = entry.url ? `<p><a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Link öffnen</a></p>` : "";
+    const link = entry.url ? `<p><a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">${T.openLink}</a></p>` : "";
     return `<li><div class="timeline-meta">${meta}</div><p>${escapeHtml(entry.text)}</p>${link}</li>`;
   }
 
   function renderVerlauf(node) {
-    const history = node.verlauf.length ? `<ul class="timeline">${node.verlauf.map(historyEntry).join("")}</ul>` : "<p>Keine Verlaufseinträge.</p>";
+    const history = node.verlauf.length ? `<ul class="timeline">${node.verlauf.map(historyEntry).join("")}</ul>` : `<p>${T.noHistory}</p>`;
     const commits = node.commits.map((ref) => {
       const short = typeof ref === "string" ? ref : ref.short;
       const commit = data.commits.find((item) => item.short === short) || (typeof ref === "object" ? ref : { short });
-      const head = commit.url ? `<a class="pill-link" href="${escapeHtml(commit.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(commit.short)}</a>` : `<span class="pill-link local">${escapeHtml(commit.short)} · nur lokal, nicht auf GitHub</span>`;
+      const head = commit.url ? `<a class="pill-link" href="${escapeHtml(commit.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(commit.short)}</a>` : `<span class="pill-link local">${escapeHtml(commit.short)} · ${T.localOnly}</span>`;
       return `<li><div class="timeline-meta">${head}</div><p>${escapeHtml(commit.msg || "")}</p>${commit.wo ? `<p class="muted">${escapeHtml(commit.wo)}</p>` : ""}</li>`;
     }).join("");
-    const docs = node.docs.length ? node.docs.map((doc) => `<li><div class="timeline-meta">Dokument</div><p><a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(doc.name)}</a></p></li>`).join("") : "";
+    const docs = node.docs.length ? node.docs.map((doc) => `<li><div class="timeline-meta">${T.document}</div><p><a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(doc.name)}</a></p></li>`).join("") : "";
     return `
-      <section class="panel-section"><h3>Verlauf</h3>${history}</section>
-      ${node.commits.length ? `<section class="panel-section"><h3>Commits</h3><ul class="timeline">${commits}</ul></section>` : ""}
-      ${node.docs.length ? `<section class="panel-section"><h3>Dokumente</h3><ul class="timeline">${docs}</ul></section>` : ""}
+      <section class="panel-section"><h3>${T.history}</h3>${history}</section>
+      ${node.commits.length ? `<section class="panel-section"><h3>${T.commits}</h3><ul class="timeline">${commits}</ul></section>` : ""}
+      ${node.docs.length ? `<section class="panel-section"><h3>${T.documents}</h3><ul class="timeline">${docs}</ul></section>` : ""}
     `;
   }
 
@@ -322,7 +363,7 @@
     const active = grid.querySelector(`[data-node="${CSS.escape(id)}"]`);
     if (active) active.classList.add("active");
     const stage = data.stages.find((item) => item.id === node.stage);
-    document.getElementById("panel-eyebrow").textContent = `Stufe ${stageIndex.get(node.stage) + 1} · ${stage.name}`;
+    document.getElementById("panel-eyebrow").textContent = `${T.stage} ${stageIndex.get(node.stage) + 1} · ${stage.name}`;
     document.getElementById("panel-title").textContent = node.label;
     document.getElementById("panel-meta").innerHTML = `<span>${escapeHtml(pointLabel)} ${escapeHtml(node.punkt)}</span>${statusBadge(node.status)}`;
     document.querySelectorAll(".tabs button").forEach((button) => button.setAttribute("aria-selected", String(button.dataset.tab === activeTab)));
@@ -432,7 +473,7 @@
   function renderOpenPoints() {
     const container = document.getElementById("open-grid");
     container.innerHTML = "";
-    document.getElementById("open-count").textContent = `${data.offen.length} Punkte`;
+    document.getElementById("open-count").textContent = T.points(data.offen.length);
     data.offen.forEach((item) => {
       const affected = data.nodes.filter((node) => node.offen.includes(item.id));
       const card = document.createElement("article");
@@ -440,11 +481,11 @@
       card.id = `offen-${item.id}`;
       const snippet = item.snippet ? `<pre class="open-snippet">${escapeHtml(item.snippet.code)}</pre>${item.snippet.url ? `<a href="${escapeHtml(item.snippet.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.snippet.file)}:${item.snippet.start}–${item.snippet.end}</a>` : ""}` : "";
       card.innerHTML = `
-        <span class="open-source">Quelle: ${escapeHtml(item.quelle)}</span>
+        <span class="open-source">${T.source}: ${escapeHtml(item.quelle)}</span>
         <h3>${escapeHtml(item.titel)}</h3>
         <p>${escapeHtml(item.text)}</p>
         ${snippet}
-        <div class="node-links">${affected.map((node) => `<button type="button" data-open-node="${escapeHtml(node.id)}">${escapeHtml(node.label)}</button>`).join("") || "<span class='chip'>kein Knoten zugeordnet</span>"}</div>
+        <div class="node-links">${affected.map((node) => `<button type="button" data-open-node="${escapeHtml(node.id)}">${escapeHtml(node.label)}</button>`).join("") || `<span class='chip'>${T.noNode}</span>`}</div>
       `;
       card.querySelectorAll("[data-open-node]").forEach((button) => button.addEventListener("click", () => openNode(button.dataset.openNode, true)));
       container.appendChild(card);
@@ -456,7 +497,7 @@
     commitsBody.innerHTML = data.commits.map((commit) => `<tr><td>${commit.url ? `<a href="${escapeHtml(commit.url)}" target="_blank" rel="noopener noreferrer"><code>${escapeHtml(commit.short)}</code></a>` : `<code>${escapeHtml(commit.short)}</code>`}</td><td>${escapeHtml(commit.msg)}</td><td>${escapeHtml(commit.wo)}</td></tr>`).join("");
     const sessionsBody = document.getElementById("sessions-body");
     sessionsBody.innerHTML = Object.entries(data.sessions).map(([key, session]) => `<tr><td>${escapeHtml(key)} · ${escapeHtml(session.id)}</td><td>${escapeHtml(session.zeit)}</td><td>${escapeHtml(session.titel)}</td></tr>`).join("");
-    document.getElementById("rules-count").textContent = `${Object.keys(data.regeln).length} Regeln`;
+    document.getElementById("rules-count").textContent = T.rulesCount(Object.keys(data.regeln).length);
     document.getElementById("rules-body").innerHTML = Object.entries(data.regeln).map(([code, text]) => `<article><code>${escapeHtml(code)}</code><p>${escapeHtml(text)}</p></article>`).join("");
     document.getElementById("grill-body").innerHTML = grillRows.map((row) => `<tr><td>${escapeHtml(row[0])}</td><td>${escapeHtml(row[1])}</td><td>${escapeHtml(row[2])}</td><td>${escapeHtml(row[3])}</td></tr>`).join("");
   }
@@ -503,10 +544,10 @@
     const list = (statuses) => data.nodes.filter((node) => statuses.includes(node.status))
       .map((node) => `<li><button type="button" class="link-btn" data-goto="${escapeHtml(node.id)}">${escapeHtml(node.label)}</button> <span class="pill pill-${node.status}">${escapeHtml(statusNames[node.status])}</span></li>`).join("");
     const c = data.stats.status_count;
-    document.getElementById("verdict-ok").innerHTML = `<h3>Was die Skizze noch trifft</h3><p class="muted">${c["stimmt-noch"]} von ${data.nodes.length} Knoten stimmen mit dem Code auf ${escapeHtml(meta.code_ref || "dem Code-Stand")} überein, ${c["teilweise"]} teilweise.</p><ul class="verdict-list">${list(["stimmt-noch", "teilweise"])}</ul>`;
-    document.getElementById("verdict-diff").innerHTML = `<h3>Wo der Code inzwischen anders ist</h3><p class="muted">${c["geaendert"]} geändert, ${c["anders"]} anders gelöst, ${c["unklar"]} unklar.</p><ul class="verdict-list">${list(["geaendert", "anders", "unklar"])}</ul>`;
+    document.getElementById("verdict-ok").innerHTML = `<h3>${T.verdictOkTitle}</h3><p class="muted">${T.verdictOk(c["stimmt-noch"], data.nodes.length, escapeHtml(meta.code_ref || T.codeRefFallback), c["teilweise"])}</p><ul class="verdict-list">${list(["stimmt-noch", "teilweise"])}</ul>`;
+    document.getElementById("verdict-diff").innerHTML = `<h3>${T.verdictDiffTitle}</h3><p class="muted">${T.verdictDiff(c["geaendert"], c["anders"], c["unklar"])}</p><ul class="verdict-list">${list(["geaendert", "anders", "unklar"])}</ul>`;
     const drift = openById.get(meta.callout_offen_id || "");
-    if (drift) document.getElementById("callout").innerHTML = `<strong>${escapeHtml(drift.titel)}.</strong> ${escapeHtml(drift.text)} <span class="muted">(Quelle: ${escapeHtml(drift.quelle)})</span>`;
+    if (drift) document.getElementById("callout").innerHTML = `<strong>${escapeHtml(drift.titel)}.</strong> ${escapeHtml(drift.text)} <span class="muted">(${T.source}: ${escapeHtml(drift.quelle)})</span>`;
     document.querySelectorAll("[data-goto]").forEach((button) => button.addEventListener("click", () => {
       openNode(button.dataset.goto, true);
       document.getElementById("flow-grid").scrollIntoView({ behavior: "smooth", block: "start" });

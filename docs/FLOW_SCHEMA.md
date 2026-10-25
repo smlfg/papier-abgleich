@@ -1,3 +1,5 @@
+English: [FLOW_SCHEMA.en.md](FLOW_SCHEMA.en.md)
+
 # `flow.json` und `project.json`: Datenformat
 
 `build.py` liest zwei Dateien aus einem Projektordner:
@@ -46,6 +48,7 @@ Stufen ohne Knoten werden ausgeblendet (`build.py` warnt).
 |---|---|---|---|
 | `id` | string | ja | Eindeutig; erscheint im Deep-Link `#id`, `#id/code`, `#id/verlauf` |
 | `label` | string | ja | Text **wie in der Skizze** (Original-Schreibweise) |
+| `label_orig` | string | nein | Original-Wortlaut der Skizze, wenn `label` eine Übersetzung ist; erscheint im Panel als „Original sketch label“ |
 | `stage` | string | ja | `Stage.id` |
 | `status` | enum | ja | `stimmt-noch` · `geaendert` · `anders` · `teilweise` · `unklar` |
 | `row` | int ≥ 0 | ja | Zeile innerhalb der Stufe (relativ; der kleinste Wert je Stufe ist die erste Zeile) |
@@ -162,5 +165,12 @@ Alle Felder optional; Standardwerte stehen in `DEFAULT_META` in `build.py`.
 | `example_node` | Knoten für den Beispiel-Deep-Link im Hilfetext |
 | `theme_key` | `localStorage`-Schlüssel für den Dunkelmodus |
 | `points` | Wörtliche Skizzen-Punkte als Tabelle: `[[nr, notiz, status, beleg], …]` |
+| `lang_switch` | Optionaler Link zur anderen Sprachfassung in der Kopfleiste: `{"href": "…", "label": "English", "hreflang": "en"}` |
 
 Alle Texte außer `*_html` werden HTML-maskiert.
+
+---
+
+## Sprachfassungen (`--lang`)
+
+`build.py --lang en` baut die Seite mit englischer Oberfläche (Status, Marker, Tabs, Überschriften). Liegen `flow.en.json` und `project.en.json` im Projektordner, werden sie statt `flow.json`/`project.json` verwendet; sonst bleibt der Inhalt unverändert. Die Mehrdateien-Version heißt dann `site/index.en.html`. Übersetzt werden nur Texte: `id`, `status`, `marker`, Code und wörtliche Zitate bleiben gleich, der Original-Wortlaut der Skizze steht in `label_orig`. Details: [FLOW_SCHEMA.en.md](FLOW_SCHEMA.en.md).

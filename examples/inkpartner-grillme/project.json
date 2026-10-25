@@ -16,6 +16,7 @@
   "theme_key": "inkpartner-theme",
   "image": "grillme.png",
   "example_node": "validate",
+  "lang_switch": {"href": "inkpartner-fakten.en.html", "label": "English", "hreflang": "en"},
   "points": [
     [
       "1",

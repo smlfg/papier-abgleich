@@ -1,0 +1,134 @@
+{
+  "title": "inkpartner: the Grillme sketch vs. the code",
+  "description": "inkpartner: interactive check of the Grillme sketch against the code.",
+  "brand": "inkpartner",
+  "brand_sub": "code check",
+  "eyebrow": "inkpartner · Grillme check · 2026-10-25",
+  "headline": "The Grillme sketch, held against the code",
+  "lede_html": "Samuel's hand-drawn pipeline (note <strong>/Inkpartnertest p. 3</strong>) as a diagram, compared node by node with the state of <strong>watch/write-gap</strong>: what each step does, whether the sketch still holds, which session or commit changed it, which rule applies and what is still open. <em>English version: the sketch labels and notes are translated from German; the original wording is shown in each node's panel.</em>",
+  "subtitle_html": "Note /Inkpartnertest p. 3, 25 Oct 2026, 00:30 Berlin time · code state <span id=\"code-stand\">watch/write-gap @ 0bfccb4</span>",
+  "note_ref": "/Inkpartnertest p. 3",
+  "footer": "Source: flow.en.json (translated from flow.json) · GRILLME_notizen.md · as of 25 Oct 2026",
+  "point_label": "Grillme point",
+  "points_label": "Grillme points",
+  "code_ref": "watch/write-gap",
+  "callout_offen_id": "drift",
+  "theme_key": "inkpartner-theme",
+  "image": "grillme.png",
+  "example_node": "validate",
+  "points": [
+    [
+      "1",
+      "Image → VLM → agent",
+      "still true",
+      "`agent.read` renders only the student's ink as one image → VLM"
+    ],
+    [
+      "2",
+      "Agent classifies subject + elements (text/image/question)",
+      "essentially true, details differ",
+      "`read()` returns `(subject, elements)`. Element kinds: line, formula, code, text, node, edge, arrow, box, table, drawing, printed; no \"image\"/\"question\". Requests for help are detected by `asks_for_help`. \"Recognize first, then prompt\" (9ba24a5) is local only, not on GitHub"
+    ],
+    [
+      "3",
+      "Subject \"class\" with tools = profile",
+      "still true",
+      "`profiles.py`: math, code, diagram, pm, prose with judge prompt, marks, max_actions"
+    ],
+    [
+      "4",
+      "Def: judge prompt + allowed marks",
+      "still true",
+      "`Profile.judge` + `Profile.marks`"
+    ],
+    [
+      "5",
+      "Subject math / kind calculation → VLM with prompt template",
+      "partial",
+      "Math profile (sympy as checker): yes; a separate \"kind\" (calculation) does not exist"
+    ],
+    [
+      "6",
+      "Output: proposal → verdict = boolean, mark = correction mark",
+      "changed / different",
+      "The verdict has 5 values: correct, wrong, hint, help, unreadable; the colour follows the verdict (`marks.COLOR`)"
+    ],
+    [
+      "7",
+      "Math: 6 marks (check, underline, circle, wavy = unreadable, ?, text)",
+      "still true",
+      "`ALL_MARKS` = check, underline, circle, wavy, question, note (same on main and write-gap)"
+    ],
+    [
+      "8",
+      "Max. 4 marks per round",
+      "true for math",
+      "`max_actions=4` (default, applies to math); pm/prose 3; plus at most 1 help note per round"
+    ],
+    [
+      "9",
+      "Watcher 1.5 s → review",
+      "still true (interval)",
+      "`--interval` default 1.5 s. New since 0bfccb4: 10 s R-COOLDOWN after every write, 45 s model timeout in the watcher (previously 600 s)"
+    ],
+    [
+      "10",
+      "return → judge.py → plan.py",
+      "named differently",
+      "There is no judge.py: the judge is `agent.judge` (agent.py), the flow lives in `review.run`"
+    ],
+    [
+      "11",
+      "validate.py = hard check, \"too strict\"",
+      "different file, content still true",
+      "No validate.py; `plan.validate()` in plan.py. \"Too strict\": according to the sessions, R-VIEWPORT 0.00 and R-RATE blocked; R-PEN-NEAR switched off in 0bfccb4 with `if False`"
+    ],
+    [
+      "12",
+      "Inputs: judge proposals + element list + subject profile",
+      "still true",
+      "`validate(actions, elements, profile, …)`"
+    ],
+    [
+      "13",
+      "Diamond yes → collected + sorted by priority → draw; no → rejected list",
+      "still true",
+      "`out.accepted.sort` (help < wrong < unreadable < hint < correct), `out.rejected` with reason"
+    ],
+    [
+      "14",
+      "draw: mark → pixels at element position, student vs. agent ink, stroke dictionary",
+      "still true, own module since 0bfccb4",
+      "`draw.py` (new in 0bfccb4) returns `list[dict]` strokes with action key; still in plan.py on main"
+    ],
+    [
+      "15",
+      "Delivery → virtual pen → RM, SSH Tablet.send",
+      "still true, route changed",
+      "Over SSH to /dev/input. main: `cat`; write-gap and planck: `dd bs=24 iflag=fullblock` (37dd2e8, 0bfccb4)"
+    ],
+    [
+      "16",
+      "After writing: notes app / native device editor",
+      "unclear",
+      "Reference is ambiguous. The file route with an xochitl restart still exists as a fallback (`systemctl stop xochitl …`)"
+    ],
+    [
+      "17",
+      "return None; cat (read .rm)",
+      "still true",
+      "`.rm` is read via `ssh cat`; several `return None` in watch.py"
+    ],
+    [
+      "18",
+      "If writing fails: watcher → element \"implodes\" [?]",
+      "unclear / different",
+      "Code: pending + retry_pending, pen pause after 2 failures; escalation after the Codex session on 23 Oct (watch.py ~595)"
+    ]
+  ],
+  "lang_switch": {
+    "href": "inkpartner-fakten.html",
+    "label": "Deutsch",
+    "hreflang": "de"
+  }
+}
