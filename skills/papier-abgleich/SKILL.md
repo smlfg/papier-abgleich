@@ -86,6 +86,15 @@ So lässt sich jeder Punkt prüfen, ohne die Quelle zu öffnen.
 - Iterieren, bis der Mensch sagt, es trifft seine Vorstellung. Rückmeldungen wie „dünn“ oder „UX suboptimal“ heißen: mehr belegter Inhalt pro Knoten und klarere Struktur, nicht mehr Features.
 - Danach den Menschen fragen: Welche Abweichung überrascht dich? Was übernimmst du in dein Bild, was im Code?
 
+## Tablet-Werkzeuge (reMarkable über USB)
+Für die Live-Arbeit am reMarkable (Mensch zeichnet, Agent liest und antwortet). Tablet per USB, `root@10.11.99.1`, SSH-Key hinterlegt (#2). Brauchen `rmc` (0.3.0), python3 und Chrome; zum Malen zusätzlich `rmscene` und `HersheyFonts`.
+
+- `tools/rm-pull.sh "<Notizbuch>" [ordner]` holt ein Notizbuch per `ssh … tar` und rendert jede Seite als SVG + PNG. Die Seitenreihenfolge kommt bei jedem Abruf neu aus `.content` (Seiten kommen live dazu). Leere Seiten haben keine `.rm` und werden nur gemeldet. Der viewBox wird gepaddet, damit links nichts abgeschnitten wird (#9, #3).
+- `tools/rm-draw.py <out.rm> <layout.json>` malt Kästen, Linien, Pfeile und Text als echte Stiftstriche in eine `.rm`-Seite. Layout-Format steht im Kopf der Datei (x −700…700, Mitte = 0; y 0…1870). Umlaute werden zu ae/oe/ue.
+- `tools/rm-preview.sh <seite.rm> <ausgabe.png>` zeigt eine Seite vor dem Schreiben als PNG (viewBox `-230 0 460 600`, Chrome headless, `CHROME=` überschreibt die Suche). Erst ansehen, dann aufs Tablet.
+
+Auf dem Tablet läuft BusyBox: `head -n 8` statt `head -8`, kein python3 (#4).
+
 ## Qualitätsregeln
 - Nie Fakten, SHAs, Zahlen oder Code erfinden. Lieber „unklar“.
 - Veraltete Dokumente aktiv als veraltet markieren, statt sie zu übernehmen.
