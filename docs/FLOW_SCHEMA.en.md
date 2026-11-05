@@ -161,7 +161,7 @@ All fields optional; defaults are in `DEFAULT_META` (German) and `DEFAULT_META_E
 | `eyebrow`, `headline` | header line and heading |
 | `lede_html`, `subtitle_html` | intro and subline; **HTML allowed** (only your own, trustworthy texts) |
 | `note_ref` | designation of the note (e.g. `/Inkpartnertest p. 3`) |
-| `image` | file name of the note image in the project folder (default `notiz.png`) |
+| `image` | file name of the note image in the project folder (default `notiz.png`). Allowed: `.png`, `.jpg`, `.svg`, `.vpen`; `.vpen` is rendered as SVG at build time. |
 | `footer` | footer |
 | `point_label`, `points_label` | "sketch point" / "sketch points", e.g. "Grillme point" |
 | `code_ref` | name of the code state in the verdict (e.g. `watch/write-gap`) |
@@ -172,6 +172,19 @@ All fields optional; defaults are in `DEFAULT_META` (German) and `DEFAULT_META_E
 | `lang_switch` | optional link to the other language version in the top bar: `{"href": "…", "label": "English", "hreflang": "en"}` |
 
 All texts except `*_html` are HTML-escaped.
+
+### `.vpen` as the image
+
+`build.py` recognises an `image` with the `.vpen` suffix, reads the 24-byte
+evdev frames and writes `<stem>.svg` to the output folder. The SVG is embedded
+like a PNG. Format, recording and limits: [VPEN-INPUT.en.md](VPEN-INPUT.en.md).
+
+For a different coordinate mapping, convert first and then use the SVG:
+
+```bash
+python3 tools/vpen.py sketch.vpen --out sketch.svg --digitizer 1620x2160
+# project.json: "image": "sketch.svg"
+```
 
 ---
 

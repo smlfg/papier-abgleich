@@ -23,7 +23,8 @@ Prinzip: *Der Mensch liefert die Struktur, der Agent liefert die Belege.* Der Ag
 Kurz und offen: „Zeichne, wie das System deiner Meinung nach funktioniert – von Eingabe bis Ausgabe, mit Namen, Zahlen und Grenzen, die du im Kopf hast. Nicht nachschauen.“ 10–20 Minuten reichen.
 
 ### 1. Quelle sichern und bestätigen
-- Neueste handschriftliche Seite holen (z. B. Tablet-Sync, nur lesend) und rendern.
+- **Bevorzugt:** Skizze als `.vpen`-Ereignisstrom aufnehmen (nur lesend, zeitlich begrenzt) oder eine vorhandene Aufnahme verwenden; mit `tools/vpen.py` bzw. `build.py` rendern.
+- **Fallback:** vorhandenes PNG/SVG. Eine `.rm`-Seite ist nur ein Snapshot: Stiftkontakt, Schreibbeginn, Pen-up und zwischen Polls überschriebene Zustände bleiben unsichtbar; `cat` ist nur Transport. Diese Grenze nennen, nicht überspielen.
 - **Seite mit dem Menschen bestätigen**, bevor gelesen wird. Nicht raten, welche Notiz gemeint ist; Notizbuchname, Seite und Änderungszeit nennen.
 - Persönliche Notizen (Gefühle, Selbstzweifel) gehören nicht in den Abgleich. Sie werden angesprochen, aber nicht veröffentlicht.
 
@@ -69,6 +70,7 @@ So lässt sich jeder Punkt prüfen, ohne die Quelle zu öffnen.
 ### 6. Prüfen (vor Übergabe)
 - Alle Links liefern HTTP 200; nicht gepushte Commits ohne Link, als „nur lokal“ markiert.
 - Eingebettete Daten = `flow.json`; Code-Ausschnitte stammen aus `git show`.
+- `python3 -m unittest discover -s tests -v` (Parser, Build, Beispiele, Werkzeuge) und `python3 tools/verify.py <seite.html>` (headless; auf macOS/Linux via `--chrome` oder `CHROME`).
 - Browser-Render (headless) ohne JS-Fehler, ohne „undefined“; Screenshots von Übersicht, Panel, Filter, Mobil.
 - Kein Schreiben ins Repo, kein Push, Quelle (Tablet) nur gelesen.
 
@@ -89,6 +91,8 @@ abgleich/
   NOTIZEN.md        Abschrift + Skizzen-Punkte
   ABGLEICH.md       Statustabelle mit Belegen
   flow.json         Daten (Knoten, Kanten, Status, Belege, Snippets)
+  skizze.vpen       Rohaufnahme (optional, empfohlen)
+  skizze.svg        daraus gerenderte Skizze (oder notiz.png)
   build.py          erzeugt site/
   site/index.html   + style.css, app.js, notiz.png
   site/<name>.html  selbsttragende Einzeldatei

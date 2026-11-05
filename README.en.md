@@ -58,9 +58,36 @@ python3 build.py my-project --name my-project.html
 
 | Command | Purpose |
 |---|---|
+| `python3 tools/vpen.py <sketch.vpen> [--out sketch.svg]` | read a `.vpen` recording and render it as SVG (standard library) |
+| `python3 tools/vpen_capture.py --out sketch.vpen --seconds 90` | record pen events from the tablet read-only (SSH, time-bounded) |
 | `python3 tools/snippet.py <repo> <sha> <path> <from> <to> [--github owner/name]` | fetch a code snippet verbatim from a commit (permalink only if pushed) |
-| `python3 tools/verify.py <page.html> [#node/code]` | render the page headless, count nodes, arrows and lanes, report JS errors |
+| `python3 tools/verify.py <page.html> [#node/code] [--chrome PATH]` | render the page headless, count nodes, arrows and lanes, report JS errors |
 | `tools/shots.sh <page.html> <folder> [node-id]` | screenshots (overview, panel, mobile, dark) |
+| `python3 -m unittest discover -s tests -v` | offline checks for parser, build, examples and tools |
+
+### Input: `.vpen` instead of a screenshot
+
+An `.rm` poll reads a saved state, not pen time. The Flywheel working state
+(29 Oct 2026, in the Algebra Agent environment) documents: “Stiftkontakt,
+Schreibbeginn, Pen-up und zwischen Polls überschriebene Zustände bleiben
+unsichtbar” — pen contact, writing start, pen-up and intermediate states
+overwritten between polls remain invisible. `cat` is only transport; a
+screenshot shows the result, not the events.
+
+`papier-abgleich` therefore prefers a **`.vpen` recording**: the same 24-byte
+`input_event` frames (`<qqHHi`) that the pen device `/dev/input/event2`
+delivers. Recording is read-only and time-bounded; the build stays offline.
+`.svg`/`.png`/`.jpg` remain fallbacks, `.rm` is only a snapshot fallback.
+
+```bash
+python3 tools/vpen_capture.py --out my-project/sketch.vpen --seconds 90
+# project.json: "image": "sketch.vpen"
+python3 build.py my-project --name my-project.html
+```
+
+Details, limits and evidence: [`docs/VPEN-INPUT.en.md`](docs/VPEN-INPUT.en.md).
+Not an official reMarkable format: `.vpen` is a recording convention for the
+raw stream, not a claim about the FIFO `/tmp/vpen.fifo`.
 
 ## The problem
 
@@ -162,9 +189,11 @@ Details: [`docs/FLOW_SCHEMA.en.md`](docs/FLOW_SCHEMA.en.md).
 ```
 build.py                    Validate and build (standard library only)
 templates/                  index.html, style.css, app.js
-tools/                      snippet.py, verify.py, shots.sh
+tools/                      vpen.py, vpen_capture.py, snippet.py, verify.py, shots.sh
+tests/                      Offline tests (parser, build, examples, tools)
 docs/WORKFLOW.en.md         Workflow, roles, quality rules
 docs/FLOW_SCHEMA.en.md      Format of flow.json and project.json
+docs/VPEN-INPUT.en.md       .vpen format, recording, limits, evidence
 skills/papier-abgleich/     The workflow as an agent skill
 examples/inkpartner-grillme The real case (sketch, notes, data, finished page)
 examples/minimal            Small example with all fields
@@ -177,6 +206,7 @@ video/                      Preparation of an explainer video (German only)
 - **The sketch is taken over verbatim**, typos included. Corrections go into the status, not the label. In a translated version, `label_orig` keeps the verbatim wording.
 - **“Unclear” is a valid result.** An open question is better than a guessed answer.
 - **The human decides.** The agent delivers the evidence; the judgement “does my picture still hold?” is the human's.
+- **Device recording is read-only.** `vpen_capture.py` writes nothing to the tablet, starts no service, and is time-bounded.
 
 ---
 

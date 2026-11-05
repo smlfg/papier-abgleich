@@ -157,7 +157,7 @@ Alle Felder optional; Standardwerte stehen in `DEFAULT_META` in `build.py`.
 | `eyebrow`, `headline` | Kopfzeile und Überschrift |
 | `lede_html`, `subtitle_html` | Einleitung und Unterzeile; **HTML erlaubt** (nur eigene, vertrauenswürdige Texte) |
 | `note_ref` | Bezeichnung der Notiz (z. B. `/Inkpartnertest S. 3`) |
-| `image` | Dateiname des Notizbilds im Projektordner (Standard `notiz.png`) |
+| `image` | Dateiname des Notizbilds im Projektordner (Standard `notiz.png`). Erlaubt: `.png`, `.jpg`, `.svg`, `.vpen`; `.vpen` wird beim Bauen als SVG gerendert. |
 | `footer` | Fußzeile |
 | `point_label`, `points_label` | „Skizzen-Punkt“ / „Skizzen-Punkte“, z. B. „Grillme-Punkt“ |
 | `code_ref` | Name des Code-Stands im Urteil (z. B. `watch/write-gap`) |
@@ -168,6 +168,20 @@ Alle Felder optional; Standardwerte stehen in `DEFAULT_META` in `build.py`.
 | `lang_switch` | Optionaler Link zur anderen Sprachfassung in der Kopfleiste: `{"href": "…", "label": "English", "hreflang": "en"}` |
 
 Alle Texte außer `*_html` werden HTML-maskiert.
+
+### `.vpen` als Bild
+
+`build.py` erkennt `image` mit der Endung `.vpen`, liest die 24-Byte-Evdev-Frames
+und schreibt `<stamm>.svg` in den Ausgabeordner. Das SVG wird wie ein PNG
+eingebettet. Format, Aufnahme und Grenzen: [VPEN-INPUT.md](VPEN-INPUT.md).
+
+Für eine andere Koordinatenabbildung zuerst konvertieren und dann das SVG
+verwenden:
+
+```bash
+python3 tools/vpen.py skizze.vpen --out skizze.svg --digitizer 1620x2160
+# project.json: "image": "skizze.svg"
+```
 
 ---
 

@@ -34,7 +34,8 @@ Principle: *The human provides the structure, the agent provides the evidence.* 
 Short and open: "Draw how you think the system works – from input to output, with the names, numbers, and boundaries you have in your head. Don't look anything up." 10–20 minutes are enough.
 
 ### 1. Secure and confirm the source
-- Fetch the most recent handwritten page (e.g. tablet sync, read-only) and render it.
+- **Preferred:** record the sketch as a `.vpen` event stream (read-only, time-bounded) or use an existing recording; render it with `tools/vpen.py` or `build.py`.
+- **Fallback:** an existing PNG/SVG. An `.rm` page is only a snapshot: pen contact, writing start, pen-up and intermediate states overwritten between polls remain invisible; `cat` is only transport. Name this limit instead of hiding it.
 - **Confirm the page with the human** before reading it. Do not guess which note is meant; name the notebook, the page, and the modification time.
 - Personal notes (feelings, self-doubt) do not belong in the comparison. They are addressed, but not published.
 
@@ -83,6 +84,7 @@ This way every point can be checked without opening the source.
 ### 6. Check (before handover)
 - All links return HTTP 200; unpushed commits get no link and are marked as "local only".
 - Embedded data = `flow.json`; code snippets come from `git show`.
+- `python3 -m unittest discover -s tests -v` (parser, build, examples, tools) and `python3 tools/verify.py <page.html>` (headless; on macOS/Linux via `--chrome` or `CHROME`).
 - Browser render (headless) without JS errors, without "undefined"; screenshots of overview, panel, filter, mobile.
 - No writing into the repo, no push, source (tablet) read only.
 
@@ -103,6 +105,8 @@ abgleich/
   NOTIZEN.md        Transcription + sketch points
   ABGLEICH.md       Status table with evidence
   flow.json         Data (nodes, edges, statuses, evidence, snippets)
+  skizze.vpen       raw recording (optional, preferred)
+  skizze.svg        sketch rendered from it (or notiz.png)
   build.py          generates site/
   site/index.html   + style.css, app.js, notiz.png
   site/<name>.html  self-contained single file

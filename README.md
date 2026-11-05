@@ -54,9 +54,36 @@ python3 build.py mein-projekt --name mein-projekt.html
 
 | Befehl | Zweck |
 |---|---|
+| `python3 tools/vpen.py <skizze.vpen> [--out skizze.svg]` | `.vpen`-Aufnahme lesen und als SVG rendern (Standardbibliothek) |
+| `python3 tools/vpen_capture.py --out skizze.vpen --seconds 90` | Stift-Ereignisse lesend vom Tablet aufnehmen (SSH, zeitlich begrenzt) |
 | `python3 tools/snippet.py <repo> <sha> <pfad> <von> <bis> [--github owner/name]` | Code-Ausschnitt wörtlich aus einem Commit holen (Permalink nur, wenn gepusht) |
-| `python3 tools/verify.py <seite.html> [#knoten/code]` | Seite headless rendern, Knoten, Pfeile und Bänder zählen, JS-Fehler melden |
+| `python3 tools/verify.py <seite.html> [#knoten/code] [--chrome PFAD]` | Seite headless rendern, Knoten, Pfeile und Bänder zählen, JS-Fehler melden |
 | `tools/shots.sh <seite.html> <ordner> [knoten-id]` | Screenshots (Übersicht, Panel, mobil, dunkel) |
+| `python3 -m unittest discover -s tests -v` | Offline-Prüfung von Parser, Build, Beispielen und Werkzeugen |
+
+### Eingabe: `.vpen` statt Screenshot
+
+Ein `.rm`-Poll liest einen gespeicherten Zustand, keine Stiftzeit. Im
+Flywheel-Arbeitsstand (29.10.2026, Algebra-Agent-Umfeld) ist dokumentiert:
+„Stiftkontakt, Schreibbeginn, Pen-up und zwischen Polls überschriebene
+Zustände bleiben unsichtbar.“ `cat` ist dabei nur Transport; ein Screenshot
+zeigt das Ergebnis, nicht die Ereignisse.
+
+Deshalb liest `papier-abgleich` bevorzugt eine **`.vpen`-Aufnahme**: dieselben
+24-Byte-`input_event`-Frames (`<qqHHi`), die das Stift-Device
+`/dev/input/event2` liefert. Die Aufnahme ist lesend und zeitlich begrenzt;
+der Build bleibt offline. `.svg`/`.png`/`.jpg` bleiben Fallback, `.rm` ist nur ein
+Snapshot-Fallback.
+
+```bash
+python3 tools/vpen_capture.py --out mein-projekt/skizze.vpen --seconds 90
+# project.json: "image": "skizze.vpen"
+python3 build.py mein-projekt --name mein-projekt.html
+```
+
+Details, Grenzen und die Beleglage: [`docs/VPEN-INPUT.md`](docs/VPEN-INPUT.md).
+Kein offizielles reMarkable-Format: `.vpen` ist eine Aufnahme-Konvention für
+den Rohstrom, keine Behauptung über die FIFO `/tmp/vpen.fifo`.
 
 ## Das Problem
 
@@ -134,9 +161,11 @@ python3 tools/verify.py examples/inkpartner-grillme/site/inkpartner-fakten.html
 ```
 build.py                    Validieren und bauen (nur Standardbibliothek)
 templates/                  index.html, style.css, app.js
-tools/                      snippet.py, verify.py, shots.sh
+tools/                      vpen.py, vpen_capture.py, snippet.py, verify.py, shots.sh
+tests/                      Offline-Tests (Parser, Build, Beispiele, Werkzeuge)
 docs/WORKFLOW.md            Ablauf, Rollen, Qualitätsregeln
 docs/FLOW_SCHEMA.md         Format von flow.json und project.json
+docs/VPEN-INPUT.md          .vpen-Format, Aufnahme, Grenzen, Beleglage
 skills/papier-abgleich/     Der Ablauf als Agent-Skill
 examples/inkpartner-grillme Der echte Fall (Skizze, Notizen, Daten, fertige Seite)
 examples/minimal            Kleines Beispiel mit allen Feldern
@@ -149,6 +178,7 @@ video/                      Vorbereitung eines Erklärvideos
 - **Die Skizze wird wörtlich übernommen**, auch mit Tippfehlern. Korrigiert wird im Status, nicht im Label.
 - **„Unklar“ ist ein gültiges Ergebnis.** Lieber eine offene Frage als eine geratene Antwort.
 - **Der Mensch entscheidet.** Der Agent liefert Belege, das Urteil „stimmt mein Bild?“ fällt der Mensch.
+- **Die Geräteaufnahme ist lesend.** `vpen_capture.py` schreibt nichts auf das Tablet, startet keinen Dienst und ist zeitlich begrenzt.
 
 ---
 

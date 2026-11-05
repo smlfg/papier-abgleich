@@ -7,7 +7,9 @@ Aufruf:
 Der Projektordner enthält:
     flow.json      Pflicht. Knoten, Stufen, Status, Belege (siehe docs/FLOW_SCHEMA.md)
     project.json   optional. Texte der Seite (Titel, Lede, Labels) und Skizzen-Punkte
-    <bild>         Notizbild, Name in project.json "image" (Standard: notiz.png)
+    <bild>         Notizbild, Name in project.json "image" (Standard: notiz.png).
+                   Erlaubt: .png/.jpg/.svg oder .vpen (roher Stift-Eventstrom,
+                   wird beim Bauen als SVG gerendert).
 
 Sprache (--lang, Standard de): steuert die festen Texte der Seite. Mit --lang en werden
 flow.en.json und project.en.json gelesen, falls vorhanden (sonst flow.json/project.json).
@@ -29,6 +31,12 @@ import re
 import shutil
 import sys
 from pathlib import Path
+
+try:
+    from tools import vpen
+except ModuleNotFoundError:  # z. B. Aufruf über einen Symlink
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from tools import vpen
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATES = ROOT / "templates"
@@ -216,6 +224,19 @@ def build(project: Path, out: Path, name: str | None, lang: str = "de") -> dict:
     if not image.exists():
         raise BuildError(f"Notizbild {image} nicht gefunden (project.json → image)")
 
+    out.mkdir(parents=True, exist_ok=True)
+    vpen_stats = None
+    if image.suffix.lower() == ".vpen":
+        try:
+            strokes = vpen.read_strokes(image.read_bytes())
+        except vpen.VpenError as exc:
+            raise BuildError(f"{image} ist keine gültige .vpen-Aufnahme: {exc}") from exc
+        if not strokes:
+            warnings.append(f"{image.name}: keine Striche gefunden")
+        vpen_stats = {"strokes": len(strokes), "points": sum(len(s) for s in strokes)}
+        image = out / (image.stem + ".svg")
+        image.write_text(vpen.strokes_to_svg(strokes), encoding="utf-8")
+
     points = meta.pop("points")
     page_meta = {k: meta[k] for k in ("point_label", "points_label", "code_ref", "callout_offen_id", "theme_key")}
     if lang != "de":
@@ -247,7 +268,6 @@ def build(project: Path, out: Path, name: str | None, lang: str = "de") -> dict:
     css = (TEMPLATES / "style.css").read_text(encoding="utf-8")
     js = (TEMPLATES / "app.js").read_text(encoding="utf-8")
 
-    out.mkdir(parents=True, exist_ok=True)
     index_name = "index.html" if lang == "de" else f"index.{lang}.html"  # Sprachen teilen sich style.css/app.js
     (out / index_name).write_text(render(template, {**values, "image_src": image.name}), encoding="utf-8")
     (out / "style.css").write_text(css, encoding="utf-8")
@@ -255,7 +275,9 @@ def build(project: Path, out: Path, name: str | None, lang: str = "de") -> dict:
     if image.resolve() != (out / image.name).resolve():
         shutil.copyfile(image, out / image.name)
 
-    mime = mimetypes.guess_type(image.name)[0] or "image/png"
+    mime = mimetypes.guess_type(image.name)[0]
+    if not mime:
+        mime = {".svg": "image/svg+xml"}.get(image.suffix.lower(), "image/png")
     data_url = f"data:{mime};base64," + base64.b64encode(image.read_bytes()).decode("ascii")
     single = render(template, {**values, "image_src": data_url})
     single = single.replace('<link rel="stylesheet" href="style.css">', f"<style>\n{css}\n</style>")
@@ -267,7 +289,8 @@ def build(project: Path, out: Path, name: str | None, lang: str = "de") -> dict:
     single_name = name or (project.name + ".html")
     (out / single_name).write_text(single, encoding="utf-8")
     return {"out": str(out), "index": index_name, "single": str(out / single_name), "nodes": len(flow["nodes"]),
-            "stages": n_stages, "warnings": warnings, "bytes_single": len(single.encode())}
+            "stages": n_stages, "warnings": warnings, "bytes_single": len(single.encode()),
+            "vpen": vpen_stats}
 
 
 def main(argv=None) -> int:
@@ -286,6 +309,9 @@ def main(argv=None) -> int:
         print(f"Warnung: {w}", file=sys.stderr)
     print(f"OK: {result['nodes']} Knoten in {result['stages']} Stufen → {result['out']}/{result['index']}")
     print(f"    Einzeldatei: {result['single']} ({result['bytes_single'] // 1024} KB)")
+    if result.get("vpen"):
+        v = result["vpen"]
+        print(f"    vpen: {v['strokes']} Striche, {v['points']} Punkte")
     return 0
 
 
