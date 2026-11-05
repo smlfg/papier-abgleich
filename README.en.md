@@ -62,6 +62,14 @@ python3 build.py my-project --name my-project.html
 | `python3 tools/verify.py <page.html> [#node/code]` | render the page headless, count nodes, arrows and lanes, report JS errors |
 | `tools/shots.sh <page.html> <folder> [node-id]` | screenshots (overview, panel, mobile, dark) |
 
+### Next steps
+
+The transferable optimisation opportunities from the Algebra Agent are listed in
+[`docs/OPTIMIERUNGEN.en.md`](docs/OPTIMIERUNGEN.en.md): what PR
+[#11](https://github.com/smlfg/papier-abgleich/pull/11) implements, what comes
+next, and what deliberately does not. In short: device acceptance first, then
+page calibration, then two-read transcription and an example benchmark.
+
 ## The problem
 
 With coding agents, one evening produces more code than you can read in a week. The tests are green and the commits have good names, but to the question *“What actually happens when I put the pen down?”* you no longer have a confident answer. The project no longer belongs to you.
@@ -165,6 +173,7 @@ templates/                  index.html, style.css, app.js
 tools/                      snippet.py, verify.py, shots.sh
 docs/WORKFLOW.en.md         Workflow, roles, quality rules
 docs/FLOW_SCHEMA.en.md      Format of flow.json and project.json
+docs/OPTIMIERUNGEN.en.md    Transferable optimisation opportunities (DE/EN)
 skills/papier-abgleich/     The workflow as an agent skill
 examples/inkpartner-grillme The real case (sketch, notes, data, finished page)
 examples/minimal            Small example with all fields

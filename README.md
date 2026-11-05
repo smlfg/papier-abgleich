@@ -58,6 +58,14 @@ python3 build.py mein-projekt --name mein-projekt.html
 | `python3 tools/verify.py <seite.html> [#knoten/code]` | Seite headless rendern, Knoten, Pfeile und Bänder zählen, JS-Fehler melden |
 | `tools/shots.sh <seite.html> <ordner> [knoten-id]` | Screenshots (Übersicht, Panel, mobil, dunkel) |
 
+### Nächste Schritte
+
+Die übertragbaren Optimierungsmöglichkeiten aus dem Algebra Agent stehen in
+[`docs/OPTIMIERUNGEN.md`](docs/OPTIMIERUNGEN.md): was in PR
+[#11](https://github.com/smlfg/papier-abgleich/pull/11) umgesetzt ist, was als
+Nächstes kommt und was bewusst nicht. Kurzfassung: erst die Geräteabnahme, dann
+Seitenkalibrierung, dann Zwei-Lesungen-Transkription und ein Beispiel-Benchmark.
+
 ## Das Problem
 
 Mit Coding-Agenten entsteht in einem Abend mehr Code, als man in einer Woche lesen kann. Die Tests sind grün und die Commits haben gute Namen, aber auf die Frage *„Was passiert eigentlich, wenn ich den Stift aufsetze?“* hat man keine sichere Antwort mehr. Das Projekt gehört einem nicht mehr.
@@ -137,6 +145,7 @@ templates/                  index.html, style.css, app.js
 tools/                      snippet.py, verify.py, shots.sh
 docs/WORKFLOW.md            Ablauf, Rollen, Qualitätsregeln
 docs/FLOW_SCHEMA.md         Format von flow.json und project.json
+docs/OPTIMIERUNGEN.md       Übertragbare Optimierungsmöglichkeiten (DE/EN)
 skills/papier-abgleich/     Der Ablauf als Agent-Skill
 examples/inkpartner-grillme Der echte Fall (Skizze, Notizen, Daten, fertige Seite)
 examples/minimal            Kleines Beispiel mit allen Feldern
