@@ -255,7 +255,9 @@ def build(project: Path, out: Path, name: str | None, lang: str = "de") -> dict:
     if image.resolve() != (out / image.name).resolve():
         shutil.copyfile(image, out / image.name)
 
-    mime = mimetypes.guess_type(image.name)[0] or "image/png"
+    mime = mimetypes.guess_type(image.name)[0]
+    if not mime:
+        mime = {".svg": "image/svg+xml"}.get(image.suffix.lower(), "image/png")
     data_url = f"data:{mime};base64," + base64.b64encode(image.read_bytes()).decode("ascii")
     single = render(template, {**values, "image_src": data_url})
     single = single.replace('<link rel="stylesheet" href="style.css">', f"<style>\n{css}\n</style>")

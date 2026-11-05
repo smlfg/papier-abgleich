@@ -54,9 +54,14 @@ python3 build.py mein-projekt --name mein-projekt.html
 
 | Befehl | Zweck |
 |---|---|
+| `tools/rm-pull.sh "<Notizbuch>" [ordner]` | Notizbuch live per USB/SSH vom reMarkable holen und als SVG + PNG rendern |
+| `python3 tools/rm-draw.py <out.rm> <layout.json>` | Kästen, Linien, Pfeile und Text als echte Stiftstriche in eine `.rm`-Seite malen |
+| `tools/rm-preview.sh <seite.rm> <ausgabe.png>` | `.rm`-Seite vor dem Schreiben als PNG ansehen |
+| `tools/rm-push.sh "<Notizbuch>" <Seite> <datei.rm>` | `.rm`-Seite sicher auf eine leere Tablet-Seite zurückschreiben |
 | `python3 tools/snippet.py <repo> <sha> <pfad> <von> <bis> [--github owner/name]` | Code-Ausschnitt wörtlich aus einem Commit holen (Permalink nur, wenn gepusht) |
-| `python3 tools/verify.py <seite.html> [#knoten/code]` | Seite headless rendern, Knoten, Pfeile und Bänder zählen, JS-Fehler melden |
-| `tools/shots.sh <seite.html> <ordner> [knoten-id]` | Screenshots (Übersicht, Panel, mobil, dunkel) |
+| `python3 tools/verify.py <seite.html> [#knoten/code] [--chrome PFAD]` | Seite headless rendern, Knoten, Pfeile und Bänder zählen, JS-Fehler melden (`CHROME=` überschreibt die Suche) |
+| `tools/shots.sh <seite.html> <ordner> [knoten-id]` | Screenshots (Übersicht, Panel, mobil, dunkel; sucht Chrome auch unter `/Applications`) |
+| `python3 -m unittest discover -s tests -v` | Offline-Tests für Build, Beispiele und Werkzeuge |
 
 ## Das Problem
 
@@ -134,7 +139,8 @@ python3 tools/verify.py examples/inkpartner-grillme/site/inkpartner-fakten.html
 ```
 build.py                    Validieren und bauen (nur Standardbibliothek)
 templates/                  index.html, style.css, app.js
-tools/                      snippet.py, verify.py, shots.sh
+tools/                      rm-pull.sh, rm-draw.py, rm-preview.sh, rm-push.sh, snippet.py, verify.py, shots.sh
+tests/                      Offline-Tests (Build, Beispiele, Werkzeuge)
 docs/WORKFLOW.md            Ablauf, Rollen, Qualitätsregeln
 docs/FLOW_SCHEMA.md         Format von flow.json und project.json
 skills/papier-abgleich/     Der Ablauf als Agent-Skill

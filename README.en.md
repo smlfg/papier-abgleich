@@ -58,9 +58,14 @@ python3 build.py my-project --name my-project.html
 
 | Command | Purpose |
 |---|---|
+| `tools/rm-pull.sh "<notebook>" [dir]` | pull a notebook live from the reMarkable over USB/SSH and render as SVG + PNG |
+| `python3 tools/rm-draw.py <out.rm> <layout.json>` | draw boxes, lines, arrows and text as real pen strokes into an `.rm` page |
+| `tools/rm-preview.sh <page.rm> <out.png>` | preview an `.rm` page as PNG before writing it to the tablet |
+| `tools/rm-push.sh "<notebook>" <page> <file.rm>` | safely write an `.rm` page back onto an empty tablet page |
 | `python3 tools/snippet.py <repo> <sha> <path> <from> <to> [--github owner/name]` | fetch a code snippet verbatim from a commit (permalink only if pushed) |
-| `python3 tools/verify.py <page.html> [#node/code]` | render the page headless, count nodes, arrows and lanes, report JS errors |
-| `tools/shots.sh <page.html> <folder> [node-id]` | screenshots (overview, panel, mobile, dark) |
+| `python3 tools/verify.py <page.html> [#node/code] [--chrome PATH]` | render the page headless, count nodes, arrows and lanes, report JS errors (`CHROME=` overrides lookup) |
+| `tools/shots.sh <page.html> <folder> [node-id]` | screenshots (overview, panel, mobile, dark; also checks `/Applications` on macOS) |
+| `python3 -m unittest discover -s tests -v` | offline checks for build, examples and tools |
 
 ## The problem
 
@@ -162,7 +167,8 @@ Details: [`docs/FLOW_SCHEMA.en.md`](docs/FLOW_SCHEMA.en.md).
 ```
 build.py                    Validate and build (standard library only)
 templates/                  index.html, style.css, app.js
-tools/                      snippet.py, verify.py, shots.sh
+tools/                      rm-pull.sh, rm-draw.py, rm-preview.sh, rm-push.sh, snippet.py, verify.py, shots.sh
+tests/                      Offline tests (build, examples, tools)
 docs/WORKFLOW.en.md         Workflow, roles, quality rules
 docs/FLOW_SCHEMA.en.md      Format of flow.json and project.json
 skills/papier-abgleich/     The workflow as an agent skill
