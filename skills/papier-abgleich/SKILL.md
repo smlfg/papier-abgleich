@@ -92,6 +92,7 @@ Für die Live-Arbeit am reMarkable (Mensch zeichnet, Agent liest und antwortet).
 - `tools/rm-pull.sh "<Notizbuch>" [ordner]` holt ein Notizbuch per `ssh … tar` und rendert jede Seite als SVG + PNG. Die Seitenreihenfolge kommt bei jedem Abruf neu aus `.content` (Seiten kommen live dazu). Leere Seiten haben keine `.rm` und werden nur gemeldet. Der viewBox wird gepaddet, damit links nichts abgeschnitten wird (#9, #3).
 - `tools/rm-draw.py <out.rm> <layout.json>` malt Kästen, Linien, Pfeile und Text als echte Stiftstriche in eine `.rm`-Seite. Layout-Format steht im Kopf der Datei (x −700…700, Mitte = 0; y 0…1870). Umlaute werden zu ae/oe/ue.
 - `tools/rm-preview.sh <seite.rm> <ausgabe.png>` zeigt eine Seite vor dem Schreiben als PNG (viewBox `-230 0 460 600`, Chrome headless, `CHROME=` überschreibt die Suche). Erst ansehen, dann aufs Tablet.
+- `tools/rm-push.sh "<Notizbuch>" <Seitennummer> <datei.rm>` schreibt eine Seite zurück aufs Tablet, aber nur auf eine **leere** Seite (keine `.rm` oder höchstens 500 Bytes), sonst Abbruch mit Byte-Größe. Die Seitennummer zählt ab 1 und wird bei jedem Aufruf neu über `.content` auf die Seiten-ID abgebildet. Vorher Backup nach `/home/root/<seiten-id>.rm.bak`. Danach startet `xochitl` neu: Oberfläche lädt ca. 10 s neu, also erst ankündigen und nicht, während der Mensch schreibt. Erfolg nur, wenn `xochitl` aktiv ist und die Byte-Größe auf dem Tablet der lokalen entspricht (#5, #7).
 
 Auf dem Tablet läuft BusyBox: `head -n 8` statt `head -8`, kein python3 (#4).
 
