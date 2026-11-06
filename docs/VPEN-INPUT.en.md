@@ -78,6 +78,22 @@ The script
 Recording is a **deliberately started** step. The build itself stays offline
 and needs neither tablet nor network.
 
+## Finished `.rm` page → image
+
+If you have already drawn and the page is saved as `.rm`, you do not need a new
+recording. The Algebra Agent renderer reads the strokes and writes a PNG:
+
+```bash
+cd ~/Projects/01_WORK/Remarkable/algebra-agent
+PYTHONPATH=src .venv/bin/python -c 'from algebra_agent.rm_page import read_page; from algebra_agent.drawback.render import render_page; page = read_page("zeichnung.rm"); render_page(page, None, "zeichnung.png", scale=1.0)'
+```
+
+Then set `"image": "zeichnung.png"` in `project.json` and build.
+
+Limit: an `.rm` is a snapshot. It contains strokes and pressure, but not the
+pen-up/timing sequence. That is enough for a static image; for timing or live
+evaluation, use `.vpen`.
+
 ## Render and build
 
 ```bash

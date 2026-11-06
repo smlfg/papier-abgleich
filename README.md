@@ -81,6 +81,11 @@ python3 tools/vpen_capture.py --out mein-projekt/skizze.vpen --seconds 90
 python3 build.py mein-projekt --name mein-projekt.html
 ```
 
+Für eine **schon gezeichnete Seite** brauchst du keine neue Aufnahme: die
+`.rm` mit dem Algebra-Agent-Renderer nach PNG rendern und als `image` verwenden.
+Der Skill `papier-abgleich` enthält den Befehl. Grenze: `.rm` ist ein Snapshot;
+für Timing/Live ist `.vpen` die richtige Quelle.
+
 Details, Grenzen und die Beleglage: [`docs/VPEN-INPUT.md`](docs/VPEN-INPUT.md).
 Kein offizielles reMarkable-Format: `.vpen` ist eine Aufnahme-Konvention für
 den Rohstrom, keine Behauptung über die FIFO `/tmp/vpen.fifo`.

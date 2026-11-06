@@ -24,7 +24,13 @@ Kurz und offen: „Zeichne, wie das System deiner Meinung nach funktioniert – 
 
 ### 1. Quelle sichern und bestätigen
 - **Bevorzugt:** Skizze als `.vpen`-Ereignisstrom aufnehmen (nur lesend, zeitlich begrenzt) oder eine vorhandene Aufnahme verwenden; mit `tools/vpen.py` bzw. `build.py` rendern.
-- **Fallback:** vorhandenes PNG/SVG. Eine `.rm`-Seite ist nur ein Snapshot: Stiftkontakt, Schreibbeginn, Pen-up und zwischen Polls überschriebene Zustände bleiben unsichtbar; `cat` ist nur Transport. Diese Grenze nennen, nicht überspielen.
+- **Fallback:** vorhandenes PNG/SVG/JPG. Eine `.rm`-Seite ist nur ein Snapshot: Stiftkontakt, Schreibbeginn, Pen-up und zwischen Polls überschriebene Zustände bleiben unsichtbar; `cat` ist nur Transport. Diese Grenze nennen, nicht überspielen.
+- **Fertige `.rm`-Seite → Bild:** Wenn die Seite schon gezeichnet und gespeichert ist, reicht `.rm` → PNG. Der Algebra-Agent-Renderer liest die Striche und schreibt ein Bild:
+  ```bash
+  cd ~/Projects/01_WORK/Remarkable/algebra-agent
+  PYTHONPATH=src .venv/bin/python -c 'from algebra_agent.rm_page import read_page; from algebra_agent.drawback.render import render_page; page = read_page("zeichnung.rm"); render_page(page, None, "zeichnung.png", scale=1.0)'
+  ```
+  Das PNG als `image` in `project.json` verwenden. Grenze: `.rm` ist ein Snapshot; Pen-up/Zeitfolge fehlen. Für Live/Timing `.vpen`.
 - **Seite mit dem Menschen bestätigen**, bevor gelesen wird. Nicht raten, welche Notiz gemeint ist; Notizbuchname, Seite und Änderungszeit nennen.
 - Persönliche Notizen (Gefühle, Selbstzweifel) gehören nicht in den Abgleich. Sie werden angesprochen, aber nicht veröffentlicht.
 

@@ -85,6 +85,11 @@ python3 tools/vpen_capture.py --out my-project/sketch.vpen --seconds 90
 python3 build.py my-project --name my-project.html
 ```
 
+For a **page you have already drawn**, you do not need a new recording: render
+the `.rm` to PNG with the Algebra Agent renderer and use it as `image`. The
+`papier-abgleich` skill contains the command. Limit: `.rm` is a snapshot; for
+timing/live use `.vpen`.
+
 Details, limits and evidence: [`docs/VPEN-INPUT.en.md`](docs/VPEN-INPUT.en.md).
 Not an official reMarkable format: `.vpen` is a recording convention for the
 raw stream, not a claim about the FIFO `/tmp/vpen.fifo`.

@@ -82,6 +82,23 @@ Das Skript
 Die Aufnahme ist ein **bewusst gestarteter** Schritt. Der Build selbst bleibt
 offline und braucht weder Tablet noch Netz.
 
+## Fertige `.rm`-Seite → Bild
+
+Wenn du schon gezeichnet hast und die Seite als `.rm` gespeichert ist, brauchst
+du keine neue Aufnahme. Der Algebra-Agent-Renderer liest die Striche und
+schreibt ein PNG:
+
+```bash
+cd ~/Projects/01_WORK/Remarkable/algebra-agent
+PYTHONPATH=src .venv/bin/python -c 'from algebra_agent.rm_page import read_page; from algebra_agent.drawback.render import render_page; page = read_page("zeichnung.rm"); render_page(page, None, "zeichnung.png", scale=1.0)'
+```
+
+Dann `"image": "zeichnung.png"` in `project.json` setzen und bauen.
+
+Grenze: Eine `.rm` ist ein Snapshot. Sie enthält Striche und Druck, aber nicht
+die Pen-up-/Zeitfolge. Für ein statisches Bild reicht das; für Timing oder
+Live-Auswertung braucht es `.vpen`.
+
 ## Rendern und bauen
 
 ```bash

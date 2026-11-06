@@ -26,7 +26,13 @@ Short and open: "Draw how you think the system works – from input to output, w
 
 ### 1. Secure and confirm the source
 - **Preferred:** record the sketch as a `.vpen` event stream (read-only, time-bounded) or use an existing recording; render it with `tools/vpen.py` or `build.py`.
-- **Fallback:** an existing PNG/SVG. An `.rm` page is only a snapshot: pen contact, writing start, pen-up and intermediate states overwritten between polls remain invisible; `cat` is only transport. Name this limit instead of hiding it.
+- **Fallback:** an existing PNG/SVG/JPG. An `.rm` page is only a snapshot: pen contact, writing start, pen-up and intermediate states overwritten between polls remain invisible; `cat` is only transport. Name this limit instead of hiding it.
+- **Finished `.rm` page → image:** if the page is already drawn and saved, `.rm` → PNG is enough. The Algebra Agent renderer reads the strokes and writes an image:
+  ```bash
+  cd ~/Projects/01_WORK/Remarkable/algebra-agent
+  PYTHONPATH=src .venv/bin/python -c 'from algebra_agent.rm_page import read_page; from algebra_agent.drawback.render import render_page; page = read_page("zeichnung.rm"); render_page(page, None, "zeichnung.png", scale=1.0)'
+  ```
+  Use the PNG as `image` in `project.json`. Limit: `.rm` is a snapshot; pen-up/timing are missing. Use `.vpen` for live/timing.
 - **Confirm the page with the human** before reading it. Do not guess which note is meant; name the notebook, the page, and the modification time.
 - Personal notes (feelings, self-doubt) do not belong in the comparison. They are addressed, but not published.
 
