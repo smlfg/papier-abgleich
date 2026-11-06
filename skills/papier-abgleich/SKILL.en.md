@@ -92,11 +92,11 @@ This way every point can be checked without opening the source.
 - Then ask the human: Which deviation surprised you? What do you take over into your picture, what into the code?
 
 ## Tablet tools (reMarkable over USB)
-For live work on the reMarkable (the human draws, the agent reads and answers). Tablet on USB, `root@10.11.99.1`, SSH key installed (#2). Needs `rmc` (0.3.0), python3 and Chrome; drawing additionally needs `rmscene` and `HersheyFonts`.
+For live work on the reMarkable (the human draws, the agent reads and answers). Tablet over USB/SSH, alias `remarkable` (or `RM_HOST=root@10.11.99.1`), SSH key installed (#2). Needs `rmc` (0.3.0), python3 and Chrome; drawing additionally needs `rmscene` and `HersheyFonts`.
 
-- `tools/rm-pull.sh "<notebook>" [dir]` fetches one notebook via `ssh … tar` and renders every page as SVG + PNG. Page order is re-read from `.content` on every pull (pages get added live). Empty pages have no `.rm` and are only reported. The viewBox is padded so nothing is clipped on the left (#9, #3).
+- `tools/rm-pull.sh "<notebook>" [dir]` fetches one notebook via `ssh … tar` and renders every page as SVG + PNG. Page order is re-read from `.content` on every pull (pages get added live). Empty pages have no `.rm` and are only reported. The viewBox is padded so nothing is clipped on the left; the PNG height follows the aspect ratio, no fixed 1872 height (#9, #3).
 - `tools/rm-draw.py <out.rm> <layout.json>` draws boxes, lines, arrows and text as real pen strokes into an `.rm` page. The layout format is in the file header (x −700…700, centre = 0; y 0…1870). Umlauts become ae/oe/ue.
-- `tools/rm-preview.sh <page.rm> <out.png>` shows a page as PNG before writing it (viewBox `-230 0 460 600`, headless Chrome, `CHROME=` overrides the lookup). Look first, then write to the tablet.
+- `tools/rm-preview.sh <page.rm> <out.png>` shows a page as PNG before writing it. The viewBox comes from rmc, the height follows the aspect ratio; no fixed 460x600 window that clips Paper Pro pages. Headless Chrome, `CHROME=` overrides the lookup. Look first, then write to the tablet.
 - `tools/rm-push.sh "<notebook>" <page number> <file.rm>` writes a page back to the tablet, but only onto an **empty** page (no `.rm` or at most 500 bytes); otherwise it aborts and prints the size. The page number counts from 1 and is mapped to the page id via `.content` on every call. A backup goes to `/home/root/<page-id>.rm.bak` first. Afterwards `xochitl` restarts: the UI reloads for about 10 s, so announce it and never do it while the human is writing. Success only when `xochitl` is active and the byte size on the tablet equals the local one (#5, #7).
 
 The tablet runs BusyBox: `head -n 8` instead of `head -8`, no python3 (#4).
